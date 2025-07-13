@@ -1,7 +1,7 @@
 // App.tsx
 import { NavigationContainer } from '@react-navigation/native';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { ThemeProvider, useThemeContext } from './src/context/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 
