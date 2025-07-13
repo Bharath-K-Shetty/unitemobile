@@ -190,26 +190,18 @@ export default function HomeScreen() {
         <TouchableOpacity onPress={() => navigation.navigate("MainApp", { screen: "Events" })} >
           <LinearGradient
             colors={['#D0FF00', '#404e00']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
             style={[styles.primaryButton, styles.extraMargin]}
-
           >
-            <Text >Join Event</Text>
+            <Text style={styles.buttonText}> Join Event</Text>
           </LinearGradient>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate("CreateEvent")}>
           <LinearGradient
             colors={['#D0FF00', '#404e00']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
             style={styles.primaryButton}
-
           >
-            <Text >Create Event</Text>
-          </LinearGradient>
+            <Text style={styles.buttonText}>Create Event</Text>          </LinearGradient>
         </TouchableOpacity>
-
       </View>
 
       <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>In the Spotlight</Text>
@@ -247,11 +239,24 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   primaryButton: {
-    backgroundColor: '#d0ff00',
     paddingVertical: 12,
     paddingHorizontal: 50,
     borderRadius: 25,
     marginBottom: 16,
+    elevation: 4,
+    shadowColor: '#D0FF00',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 12,
+    textAlign: 'center',
+    textShadowColor: 'rgba(255,255,255,0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   extraMargin: {
     marginRight: 20
@@ -260,7 +265,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 20,
-
   },
   header: {
     flexDirection: 'row',
