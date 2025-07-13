@@ -12,7 +12,7 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/unitelog.jpg')}
+        source={require('../../assets/images/limeUniteLogo.jpg')}
         style={styles.image}
         resizeMode="contain"
       />
@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   title: { color: '#fff', fontSize: 24, fontWeight: '600', textAlign: 'center', marginBottom: 10 },
   description: { color: '#aaa', textAlign: 'center', marginBottom: 30 },
   primaryButton: {
-    backgroundColor: '#fff',
+    backgroundColor: '#D0FF00',
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 25,

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "untiteapp",
+    "name": "uniteapp",
     "slug": "untiteapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "untiteapp",
+    "scheme": "uniteapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -16,7 +16,11 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.bharathkshetty.uniteapp"
     },
     "web": {
       "bundler": "metro",
@@ -31,7 +35,19 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you share them with your friends."
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8253420e-d97d-4c3d-968f-a9363f65af22"
+      }
+    },
+    "owner": "bharathkshetty"
   }
 }

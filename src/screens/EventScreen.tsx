@@ -2,19 +2,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Dimensions,
   FlatList,
   Image,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
+
+
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.9;
@@ -29,17 +31,21 @@ const EVENTS = [
   {
     id: '1',
     title: 'Bandaje Falls Trek',
-    image: require('../../assets/images/unitelog.jpg'),
+    image: require('../../assets/images/event2.jpg'),
+  },
+  {
+    id: '2',
+    title: 'Bandaje Falls Trek',
+    image: require('../../assets/images/event6.jpg'),
   },
 ];
 
 const EventScreen = () => {
   return (
-    <ScrollView style={styles.container}>
-      <SafeAreaView>
-        <LinearGradient colors={['#4e2ca5', '#2a0c4d']} style={styles.gradient}>
-          {/* Search bar */}
-          {/* Search Bar */}
+    <View style={{ flex: 1, paddingTop: StatusBar.currentHeight || 24, backgroundColor: '#0d0d0d' }}>
+      <ScrollView style={styles.container}>
+
+        <LinearGradient colors={['#D0FF00', '#101400']} style={styles.gradient}>
           <View style={styles.searchContainer}>
             <Ionicons name="search-outline" size={20} color="#888" style={{ marginLeft: 8 }} />
             <TextInput
@@ -64,36 +70,41 @@ const EventScreen = () => {
             )}
           />
         </LinearGradient>
-      </SafeAreaView>
-      {/* Filters */}
-      <View style={styles.filterRow}>
-        <TouchableOpacity style={styles.filterBtn}>
-          <Text style={styles.filterText}>Filters</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.filterBtn}>
-          <Text style={styles.filterText}>Today</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.filterBtn}>
-          <Text style={styles.filterText}>Tomorrow</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.filterBtn}>
-          <Text style={styles.filterText}>This Weekend</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* Events */}
-      {EVENTS.map((event) => (
-        <TouchableOpacity key={event.id} style={styles.eventCard}>
-          <Image source={event.image} style={styles.eventImage} />
-          <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.8)']}
-            style={styles.eventOverlay}
-          >
-            <Text style={styles.eventTitle}>{event.title}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+        {/* Filters */}
+        <View style={styles.filterRow}>
+          <TouchableOpacity style={styles.filterBtn}>
+            <Text style={styles.filterText}>Filters</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.filterBtn}>
+            <Text style={styles.filterText}>Today</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.filterBtn}>
+            <Text style={styles.filterText}>Tomorrow</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.filterBtn}>
+            <Text style={styles.filterText}>This Weekend</Text>
+          </TouchableOpacity>
+        </View>
+
+        {EVENTS.map((event) => (
+          event?.image && (
+            <TouchableOpacity key={event.id} style={styles.eventCard}>
+              <Image source={event.image} style={styles.eventImage} />
+              <View style={styles.eventOverlay}>
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.8)']}
+                  style={{ flex: 1, padding: 12 }}
+                >
+                  <Text style={styles.eventTitle}>{event.title}</Text>
+                </LinearGradient>
+              </View>
+            </TouchableOpacity>
+          )
+        ))}
+
+      </ScrollView>
+    </View>
   );
 };
 
@@ -158,7 +169,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   filterBtn: {
-    backgroundColor: '#2a0c4d',
+    backgroundColor: '#303b00',
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 18,

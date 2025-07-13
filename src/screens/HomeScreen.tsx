@@ -1,13 +1,14 @@
 // src/screens/HomeScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useRef } from 'react';
 import {
   Dimensions,
   FlatList,
   Image,
+  StatusBar,
   StyleSheet,
   Switch,
   Text,
@@ -16,9 +17,9 @@ import {
   View
 } from 'react-native';
 import { useThemeContext } from '../context/ThemeContext';
-import { TabParamList } from '../navigation';
+import { RootStackParamList } from '../navigation/RootNavigator';
 
-type HomeNavProp = BottomTabNavigationProp<TabParamList, 'Unite'>;
+type HomeNavProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.8;
@@ -80,19 +81,19 @@ export default function HomeScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={{ flex: 1, paddingTop: StatusBar.currentHeight, backgroundColor: '#0d0d0d' }}>
       {/* purple gradient header + search */}
       <LinearGradient
-        colors={['#4e2ca5', '#2a0c4d']}
+        colors={['#D0FF00', '#101400']}
         style={styles.gradient}
       >
         <View style={styles.header}>
-          <Text style={[styles.walletId, { color: theme.colors.text }]}>
+          <Text style={[styles.walletId, { color: "#000" }]}>
             bharathshettyy.cb.id
           </Text>
           <View style={styles.headerRight}>
-            <Ionicons name="qr-code-outline" size={24} color={theme.colors.text} />
-            <Ionicons name="settings-outline" size={24} color={theme.colors.text} style={{ marginLeft: 16 }} />
+            <Ionicons name="qr-code-outline" size={24} color="#000" />
+            <Ionicons name="settings-outline" size={24} color="#000" style={{ marginLeft: 16 }} />
             <Switch value={isDark} onValueChange={toggleTheme} thumbColor="#fff" />
           </View>
         </View>
@@ -106,8 +107,32 @@ export default function HomeScreen() {
           />
         </View>
       </LinearGradient>
+      <View style={styles.buttonRow}>
+        <TouchableOpacity onPress={() => navigation.navigate("MainApp", { screen: "Events" })} >
+          <LinearGradient
+            colors={['#D0FF00', '#404e00']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.primaryButton, styles.extraMargin]}
 
-      {/* carousel */}
+          >
+            <Text >Join Event</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate("CreateEvent")}>
+          <LinearGradient
+            colors={['#D0FF00', '#404e00']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.primaryButton}
+
+          >
+            <Text >Create Event</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
+      </View>
+
       <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>In the Spotlight</Text>
       <FlatList
         ref={carouselRef}
@@ -119,7 +144,7 @@ export default function HomeScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.carousel}
       />
-    </View>
+    </View >
   );
 }
 
@@ -128,9 +153,25 @@ const CARD_SPACING = 16;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   gradient: {
-    paddingTop: 50,
+    paddingTop: 15,
     paddingHorizontal: 16,
     paddingBottom: 24,
+  },
+  primaryButton: {
+    backgroundColor: '#d0ff00',
+    paddingVertical: 12,
+    paddingHorizontal: 50,
+    borderRadius: 25,
+    marginBottom: 16,
+  },
+  extraMargin: {
+    marginRight: 20
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+
   },
   header: {
     flexDirection: 'row',
@@ -173,10 +214,11 @@ const styles = StyleSheet.create({
     marginHorizontal: CARD_SPACING / 2,
     borderRadius: 12,
     overflow: 'hidden',
+    height: CARD_WIDTH * 1.3
   },
   cardImage: {
     width: '100%',
-    height: CARD_WIDTH * 0.56,
+    height: CARD_WIDTH * 1,
   },
   cardInfo: {
     padding: 12,

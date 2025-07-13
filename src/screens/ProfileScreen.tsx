@@ -5,61 +5,64 @@ import React from 'react';
 import {
   Image,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 const ProfileScreen = () => {
   return (
-    <ScrollView style={styles.container}>
-      <LinearGradient colors={['#4e2ca5', '#2a0c4d']} style={styles.gradient}>
-        <View style={styles.header}>
-          <TouchableOpacity>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerText}>Profile</Text>
-        </View>
-
-        <View style={styles.profileInfo}>
-          <Image
-            source={require('../../assets/images/unitelog.jpg')}
-            style={styles.avatar}
-          />
-          <View style={{ marginLeft: 12 }}>
-            <Text style={styles.profileName}>Update your name</Text>
-            <Text style={styles.profilePhone}>+91 7795116048</Text>
+    <View style={{ flex: 1, paddingTop: StatusBar.currentHeight, backgroundColor: '#0d0d0d' }}>
+      <ScrollView style={styles.container}>
+        <LinearGradient colors={['#D0FF00', '#101400']} style={styles.gradient}>
+          <View style={styles.header}>
+            <TouchableOpacity>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </TouchableOpacity>
+            <Text style={styles.headerText}>Profile</Text>
           </View>
-          <TouchableOpacity style={{ marginLeft: 'auto' }}>
-            <Ionicons name="pencil-outline" size={20} color="#fff" />
-          </TouchableOpacity>
+
+          <View style={styles.profileInfo}>
+            <Image
+              source={require('../../assets/images/limeUniteLogo.jpg')}
+              style={styles.avatar}
+            />
+            <View style={{ marginLeft: 12 }}>
+              <Text style={styles.profileName}>Update your name</Text>
+              <Text style={styles.profilePhone}>+91 7795116048</Text>
+            </View>
+            <TouchableOpacity style={{ marginLeft: 'auto' }}>
+              <Ionicons name="pencil-outline" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+
+        {/* All Bookings */}
+        <SectionTitle title="All bookings" />
+        <View style={styles.bookingsRow}>
+          <BookingCard icon="silverware-fork-knife" label="Table bookings" />
+          <BookingCard icon="movie-open" label="Movie tickets" />
+          <BookingCard icon="guitar-electric" label="Event tickets" />
         </View>
-      </LinearGradient>
 
-      {/* All Bookings */}
-      <SectionTitle title="All bookings" />
-      <View style={styles.bookingsRow}>
-        <BookingCard icon="silverware-fork-knife" label="Table bookings" />
-        <BookingCard icon="movie-open" label="Movie tickets" />
-        <BookingCard icon="guitar-electric" label="Event tickets" />
-      </View>
+        {/* Vouchers */}
+        <SectionTitle title="Vouchers" />
+        <ListItem icon="gift-outline" label="Collected vouchers" />
 
-      {/* Vouchers */}
-      <SectionTitle title="Vouchers" />
-      <ListItem icon="gift-outline" label="Collected vouchers" />
+        {/* Payments */}
+        <SectionTitle title="Payments" />
+        <ListItem icon="file-document-outline" label="Dining transactions" />
+        <ListItem icon="wallet-outline" label="District Money" />
 
-      {/* Payments */}
-      <SectionTitle title="Payments" />
-      <ListItem icon="file-document-outline" label="Dining transactions" />
-      <ListItem icon="wallet-outline" label="District Money" />
-
-      {/* Manage */}
-      <SectionTitle title="Manage" />
-      <ListItem icon="pencil" label="Your reviews" />
-      <ListItem icon="flash-outline" label="Hotlists" />
-      <ListItem icon="bell-outline" label="Movie reminders" />
-    </ScrollView>
+        {/* Manage */}
+        <SectionTitle title="Manage" />
+        <ListItem icon="pencil" label="Your reviews" />
+        <ListItem icon="flash-outline" label="Hotlists" />
+        <ListItem icon="bell-outline" label="Movie reminders" />
+      </ScrollView>
+    </View>
   );
 };
 
@@ -90,7 +93,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0d0d0d',
   },
   gradient: {
-    paddingTop: 48,
+    paddingTop: 20,
     paddingHorizontal: 16,
     paddingBottom: 20,
   },

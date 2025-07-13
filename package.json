@@ -1,5 +1,5 @@
 {
-  "name": "untiteapp",
+  "name": "uniteapp",
   "main": "node_modules/expo/AppEntry.js",
   "version": "1.0.0",
   "scripts": {
@@ -13,6 +13,7 @@
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
     "@privy-io/expo": "^0.55.5",
+    "@react-native-community/datetimepicker": "8.4.1",
     "@react-navigation/bottom-tabs": "^7.4.2",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.14",
@@ -26,9 +27,11 @@
     "expo": "^53.0.19",
     "expo-blur": "~14.1.5",
     "expo-constants": "~17.1.7",
+    "expo-dev-client": "~5.2.4",
     "expo-font": "~13.3.2",
     "expo-haptics": "~14.1.4",
     "expo-image": "~2.3.2",
+    "expo-image-picker": "~16.1.4",
     "expo-linear-gradient": "~14.1.5",
     "expo-linking": "~7.1.7",
     "expo-splash-screen": "~0.30.10",

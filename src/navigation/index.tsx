@@ -36,7 +36,7 @@ const Navigation = () => {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: "#D0FF00",
         tabBarInactiveTintColor: colors.text,
         tabBarStyle: {
           backgroundColor: colors.card,
