@@ -3,8 +3,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Dimensions,
   FlatList,
   Image,
@@ -14,7 +15,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  ViewToken
 } from 'react-native';
 import { useThemeContext } from '../context/ThemeContext';
 import { RootStackParamList } from '../navigation/RootNavigator';
@@ -22,40 +24,40 @@ import { RootStackParamList } from '../navigation/RootNavigator';
 type HomeNavProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.8;
+const CARD_WIDTH = width * 0.9;
 const CARD_HEIGHT = CARD_WIDTH * 0.4;
 // dummy data
 const EVENTS = [
   {
-    id: '1',
+    id: 1,
     title: 'Echoes of Earth, 2025',
     date: '06 Dec - 07 Dec, 1 PM',
     location: 'Bengaluru',
     image: require('../../assets/images/event1.jpg'),
   },
   {
-    id: '2',
+    id: 2,
     title: 'Echoes of Earth, 2025',
     date: '06 Dec - 07 Dec, 1 PM',
     location: 'Bengaluru',
     image: require('../../assets/images/event1.jpg'),
   },
   {
-    id: '3',
+    id: 3,
     title: 'Echoes of Earth, 2025',
     date: '06 Dec - 07 Dec, 1 PM',
     location: 'Bengaluru',
     image: require('../../assets/images/event1.jpg'),
   },
   {
-    id: '4',
+    id: 4,
     title: 'Echoes of Earth, 2025',
     date: '06 Dec - 07 Dec, 1 PM',
     location: 'Bengaluru',
     image: require('../../assets/images/event1.jpg'),
   },
   {
-    id: '5',
+    id: 5,
     title: 'Echoes of Earth, 2025',
     date: '06 Dec - 07 Dec, 1 PM',
     location: 'Bengaluru',
@@ -68,17 +70,94 @@ export default function HomeScreen() {
   const navigation = useNavigation<HomeNavProp>();
   const { isDark, toggleTheme, theme } = useThemeContext();
   const carouselRef = useRef<FlatList<any>>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const animatedValues = useRef(EVENTS.map(() => new Animated.Value(0.85))).current;
+  const opacityValues = useRef(EVENTS.map(() => new Animated.Value(0.5))).current;
 
-  const renderEvent = ({ item }: any) => (
-    <TouchableOpacity style={[styles.card, { backgroundColor: theme.colors.card }]}>
-      <Image source={item.image} style={styles.cardImage} />
-      <View style={styles.cardInfo}>
-        <Text style={[styles.cardDate, { color: theme.colors.text }]}>{item.date}</Text>
-        <Text style={[styles.cardTitle, { color: theme.colors.text }]}>{item.title}</Text>
-        <Text style={[styles.cardLoc, { color: theme.colors.text }]}>{item.location}</Text>
-      </View>
-    </TouchableOpacity>
+  const animateCard = (index: number, isActive: boolean) => {
+    const scale = isActive ? 1 : 0.92;
+    const opacity = isActive ? 1 : 0.6;
+    
+    Animated.parallel([
+      Animated.timing(animatedValues[index], {
+        toValue: scale,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityValues[index], {
+        toValue: opacity,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  // Initialize first card as active on mount
+  useEffect(() => {
+    EVENTS.forEach((_, index) => {
+      animateCard(index, index === 0);
+    });
+  }, []);
+
+  const renderEvent = ({ item, index }: any) => (
+    <Animated.View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.colors.card,
+          opacity: opacityValues[index],
+          transform: [{ scale: animatedValues[index] }],
+        },
+      ]}
+    >
+      <TouchableOpacity style={{ flex: 1 }}>
+        <Image source={item.image} style={styles.cardImage} />
+        <View style={styles.cardInfo}>
+          <Text style={[styles.cardDate, { color: theme.colors.text }]}>{item.date}</Text>
+          <Text style={[styles.cardTitle, { color: theme.colors.text }]}>{item.title}</Text>
+          <Text style={[styles.cardLoc, { color: theme.colors.text }]}>{item.location}</Text>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 100
+  }).current;
+
+  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<any>[]; changed: ViewToken<any>[]; }) => {
+    if (viewableItems.length > 0) {
+      const newIndex = viewableItems[0].index;
+      
+      if (newIndex !== null && newIndex !== currentIndex) {
+        setCurrentIndex(newIndex);
+        
+        // Animate all cards
+        EVENTS.forEach((_, index) => {
+          animateCard(index, index === newIndex);
+        });
+      }
+    }
+  }, [currentIndex]);
+
+  const onScroll = useCallback((event: any) => {
+    const scrollX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollX / (CARD_WIDTH + CARD_SPACING));
+    
+    if (index >= 0 && index < EVENTS.length && index !== currentIndex) {
+      setCurrentIndex(index);
+      
+      // Animate all cards
+      EVENTS.forEach((_, cardIndex) => {
+        animateCard(cardIndex, cardIndex === index);
+      });
+    }
+  }, [currentIndex]);
+
+  const viewabilityConfigCallbackPairs = useRef([
+    { viewabilityConfig, onViewableItemsChanged }
+  ]);
 
   return (
     <View style={{ flex: 1, paddingTop: StatusBar.currentHeight, backgroundColor: '#0d0d0d' }}>
@@ -138,9 +217,19 @@ export default function HomeScreen() {
         ref={carouselRef}
         data={EVENTS}
         renderItem={renderEvent}
-        keyExtractor={i => i.id}
+        keyExtractor={i => i.id.toString()}
         horizontal
-        pagingEnabled
+        snapToInterval={CARD_WIDTH + CARD_SPACING}
+        decelerationRate="fast"
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+        initialScrollIndex={0}
+        getItemLayout={(_, index) => ({
+          length: CARD_WIDTH + CARD_SPACING,
+          offset: (CARD_WIDTH + CARD_SPACING) * index,
+          index,
+        })}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.carousel}
       />
@@ -206,7 +295,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   carousel: {
-    paddingHorizontal: CARD_SPACING / 2,
+    paddingHorizontal: (width - CARD_WIDTH) / 2,
     paddingTop: 8,
   },
   card: {
