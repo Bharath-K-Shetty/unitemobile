@@ -1,4 +1,3 @@
-// src/screens/HomeScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,6 +8,7 @@ import {
   Dimensions,
   FlatList,
   Image,
+  SafeAreaView,
   StatusBar,
   StyleSheet,
   Switch,
@@ -26,7 +26,8 @@ type HomeNavProp = NativeStackNavigationProp<RootStackParamList>;
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.9;
 const CARD_HEIGHT = CARD_WIDTH * 0.4;
-// dummy data
+const CARD_SPACING = 16;
+
 const EVENTS = [
   {
     id: 1,
@@ -63,7 +64,6 @@ const EVENTS = [
     location: 'Bengaluru',
     image: require('../../assets/images/event1.jpg'),
   },
-  // add more...
 ];
 
 export default function HomeScreen() {
@@ -73,6 +73,10 @@ export default function HomeScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const animatedValues = useRef(EVENTS.map(() => new Animated.Value(0.85))).current;
   const opacityValues = useRef(EVENTS.map(() => new Animated.Value(0.5))).current;
+  const autoScrollInterval = useRef<NodeJS.Timeout | null>(null);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+  const isScrollingRef = useRef(false);
 
   const animateCard = (index: number, isActive: boolean) => {
     const scale = isActive ? 1 : 0.92;
@@ -92,12 +96,87 @@ export default function HomeScreen() {
     ]).start();
   };
 
-  // Initialize first card as active on mount
+  const scrollToIndex = (index: number) => {
+    if (carouselRef.current && !isScrollingRef.current) {
+      isScrollingRef.current = true;
+      carouselRef.current.scrollToIndex({
+        index,
+        animated: true,
+      });
+      
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 500);
+    }
+  };
+
+  const startAutoScroll = useCallback(() => {
+    if (autoScrollInterval.current) {
+      clearInterval(autoScrollInterval.current);
+    }
+    
+    autoScrollInterval.current = setInterval(() => {
+      if (!isUserScrolling && !isScrollingRef.current) {
+        setCurrentIndex((prevIndex) => {
+          const nextIndex = (prevIndex + 1) % EVENTS.length;
+          scrollToIndex(nextIndex);
+          
+          EVENTS.forEach((_, index) => {
+            animateCard(index, index === nextIndex);
+          });
+          
+          return nextIndex;
+        });
+      }
+    }, 3000);
+  }, [isUserScrolling]);
+
+  const stopAutoScroll = useCallback(() => {
+    if (autoScrollInterval.current) {
+      clearInterval(autoScrollInterval.current);
+      autoScrollInterval.current = null;
+    }
+  }, []);
+
+  const handleScrollBegin = useCallback(() => {
+    setIsUserScrolling(true);
+    stopAutoScroll();
+    
+    if (scrollTimeout.current) {
+      clearTimeout(scrollTimeout.current);
+    }
+  }, [stopAutoScroll]);
+
+  const handleScrollEnd = useCallback(() => {
+    if (scrollTimeout.current) {
+      clearTimeout(scrollTimeout.current);
+    }
+    
+    scrollTimeout.current = setTimeout(() => {
+      setIsUserScrolling(false);
+      setTimeout(() => {
+        startAutoScroll();
+      }, 100);
+    }, 2000);
+  }, [startAutoScroll]);
+
   useEffect(() => {
     EVENTS.forEach((_, index) => {
       animateCard(index, index === 0);
     });
-  }, []);
+    
+    const initTimeout = setTimeout(() => {
+      startAutoScroll();
+    }, 1000);
+    
+    return () => {
+      clearTimeout(initTimeout);
+      stopAutoScroll();
+      if (scrollTimeout.current) {
+        clearTimeout(scrollTimeout.current);
+      }
+    };
+  }, [startAutoScroll, stopAutoScroll]);
 
   const renderEvent = ({ item, index }: any) => (
     <Animated.View
@@ -127,13 +206,12 @@ export default function HomeScreen() {
   }).current;
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<any>[]; changed: ViewToken<any>[]; }) => {
-    if (viewableItems.length > 0) {
+    if (viewableItems.length > 0 && !isScrollingRef.current) {
       const newIndex = viewableItems[0].index;
       
       if (newIndex !== null && newIndex !== currentIndex) {
         setCurrentIndex(newIndex);
         
-        // Animate all cards
         EVENTS.forEach((_, index) => {
           animateCard(index, index === newIndex);
         });
@@ -142,13 +220,14 @@ export default function HomeScreen() {
   }, [currentIndex]);
 
   const onScroll = useCallback((event: any) => {
+    if (isScrollingRef.current) return;
+    
     const scrollX = event.nativeEvent.contentOffset.x;
     const index = Math.round(scrollX / (CARD_WIDTH + CARD_SPACING));
     
     if (index >= 0 && index < EVENTS.length && index !== currentIndex) {
       setCurrentIndex(index);
       
-      // Animate all cards
       EVENTS.forEach((_, cardIndex) => {
         animateCard(cardIndex, cardIndex === index);
       });
@@ -160,8 +239,8 @@ export default function HomeScreen() {
   ]);
 
   return (
+    <SafeAreaView style={{ flex: 1 }}>      
     <View style={{ flex: 1, paddingTop: StatusBar.currentHeight, backgroundColor: '#0d0d0d' }}>
-      {/* purple gradient header + search */}
       <LinearGradient
         colors={['#D0FF00', '#101400']}
         style={styles.gradient}
@@ -192,7 +271,7 @@ export default function HomeScreen() {
             colors={['#D0FF00', '#404e00']}
             style={[styles.primaryButton, styles.extraMargin]}
           >
-            <Text style={styles.buttonText}> Join Event</Text>
+            <Text style={styles.buttonText}>Join Event</Text>
           </LinearGradient>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate("CreateEvent")}>
@@ -200,7 +279,8 @@ export default function HomeScreen() {
             colors={['#D0FF00', '#404e00']}
             style={styles.primaryButton}
           >
-            <Text style={styles.buttonText}>Create Event</Text>          </LinearGradient>
+                         <Text style={styles.buttonText}>Create Event</Text>
+           </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -215,6 +295,9 @@ export default function HomeScreen() {
         decelerationRate="fast"
         onScroll={onScroll}
         scrollEventThrottle={16}
+        onScrollBeginDrag={handleScrollBegin}
+        onScrollEndDrag={handleScrollEnd}
+        onMomentumScrollEnd={handleScrollEnd}
         viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
         initialScrollIndex={0}
         getItemLayout={(_, index) => ({
@@ -226,10 +309,9 @@ export default function HomeScreen() {
         contentContainerStyle={styles.carousel}
       />
     </View >
+    </SafeAreaView>
   );
 }
-
-const CARD_SPACING = 16;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
