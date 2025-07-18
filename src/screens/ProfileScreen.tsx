@@ -1,4 +1,5 @@
 // src/screens/ProfileScreen.tsx
+import { useUniteWallet } from '@/context/WalletContext';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
@@ -13,6 +14,7 @@ import {
 } from 'react-native';
 
 const ProfileScreen = () => {
+  const { publicKey } = useUniteWallet();
   return (
     <View style={{ flex: 1, paddingTop: StatusBar.currentHeight, backgroundColor: '#0d0d0d' }}>
       <ScrollView style={styles.container}>
@@ -29,8 +31,8 @@ const ProfileScreen = () => {
               source={require('../../assets/images/limeUniteLogo.jpg')}
               style={styles.avatar}
             />
-            <View style={{ marginLeft: 12 }}>
-              <Text style={styles.profileName}>Update your name</Text>
+            <View style={{ marginLeft: 12, width: 200 }}>
+              <Text style={styles.profileName}>  {publicKey ? ` ${publicKey.toBase58()}` : 'Not connected'}</Text>
               <Text style={styles.profilePhone}>+91 7795116048</Text>
             </View>
             <TouchableOpacity style={{ marginLeft: 'auto' }}>
@@ -120,7 +122,7 @@ const styles = StyleSheet.create({
   },
   profileName: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   profilePhone: {

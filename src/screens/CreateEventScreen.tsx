@@ -15,7 +15,6 @@ import {
   View
 } from 'react-native';
 
-
 export default function CreateEventScreen() {
   const [eventName, setEventName] = useState('');
   const [image, setImage] = useState<string | null>(null);
@@ -47,7 +46,7 @@ export default function CreateEventScreen() {
 
   const handleDateChange = (type: 'year' | 'month' | 'day' | 'hour' | 'minute', value: number) => {
     const newDate = new Date(deadline);
-    
+
     switch (type) {
       case 'year':
         newDate.setFullYear(value);
@@ -65,7 +64,7 @@ export default function CreateEventScreen() {
         newDate.setMinutes(value);
         break;
     }
-    
+
     setDeadline(newDate);
   };
 
@@ -202,7 +201,7 @@ export default function CreateEventScreen() {
                         ))}
                       </ScrollView>
                     </View>
-                    
+
                     <View style={styles.pickerColumn}>
                       <Text style={styles.pickerLabel}>Month</Text>
                       <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
@@ -219,7 +218,7 @@ export default function CreateEventScreen() {
                         ))}
                       </ScrollView>
                     </View>
-                    
+
                     <View style={styles.pickerColumn}>
                       <Text style={styles.pickerLabel}>Day</Text>
                       <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
@@ -236,7 +235,7 @@ export default function CreateEventScreen() {
                         ))}
                       </ScrollView>
                     </View>
-                    
+
                     <View style={styles.pickerColumn}>
                       <Text style={styles.pickerLabel}>Hour</Text>
                       <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
@@ -253,7 +252,7 @@ export default function CreateEventScreen() {
                         ))}
                       </ScrollView>
                     </View>
-                    
+
                     <View style={styles.pickerColumn}>
                       <Text style={styles.pickerLabel}>Min</Text>
                       <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>

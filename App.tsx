@@ -1,9 +1,19 @@
 // App.tsx
+// Polyfills for Solana in React Native
+import { Buffer } from 'buffer';
+import 'react-native-get-random-values';
+import 'react-native-url-polyfill/auto';
+
 import { NavigationContainer } from '@react-navigation/native';
 import * as SplashScreen from 'expo-splash-screen';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { ThemeProvider, useThemeContext } from './src/context/ThemeContext';
+import { WalletProvider } from './src/context/WalletContext';
 import RootNavigator from './src/navigation/RootNavigator';
+
+if (typeof global.Buffer === 'undefined') {
+  global.Buffer = Buffer;
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -19,9 +29,10 @@ const AppContent = () => {
   }, []);
 
   return (
-    <NavigationContainer theme={theme}>
-      <RootNavigator />
-    </NavigationContainer>
+    <WalletProvider>
+      <NavigationContainer theme={theme}>
+        <RootNavigator />
+      </NavigationContainer></WalletProvider>
   );
 };
 

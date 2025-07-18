@@ -1,3 +1,4 @@
+import { useUniteWallet } from '@/context/WalletContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -77,11 +78,12 @@ export default function HomeScreen() {
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
   const isScrollingRef = useRef(false);
+  const { publicKey } = useUniteWallet();
 
   const animateCard = (index: number, isActive: boolean) => {
     const scale = isActive ? 1 : 0.92;
     const opacity = isActive ? 1 : 0.6;
-    
+
     Animated.parallel([
       Animated.timing(animatedValues[index], {
         toValue: scale,
@@ -103,7 +105,7 @@ export default function HomeScreen() {
         index,
         animated: true,
       });
-      
+
       setTimeout(() => {
         isScrollingRef.current = false;
       }, 500);
@@ -114,17 +116,17 @@ export default function HomeScreen() {
     if (autoScrollInterval.current) {
       clearInterval(autoScrollInterval.current);
     }
-    
+
     autoScrollInterval.current = setInterval(() => {
       if (!isUserScrolling && !isScrollingRef.current) {
         setCurrentIndex((prevIndex) => {
           const nextIndex = (prevIndex + 1) % EVENTS.length;
           scrollToIndex(nextIndex);
-          
+
           EVENTS.forEach((_, index) => {
             animateCard(index, index === nextIndex);
           });
-          
+
           return nextIndex;
         });
       }
@@ -141,7 +143,7 @@ export default function HomeScreen() {
   const handleScrollBegin = useCallback(() => {
     setIsUserScrolling(true);
     stopAutoScroll();
-    
+
     if (scrollTimeout.current) {
       clearTimeout(scrollTimeout.current);
     }
@@ -151,7 +153,7 @@ export default function HomeScreen() {
     if (scrollTimeout.current) {
       clearTimeout(scrollTimeout.current);
     }
-    
+
     scrollTimeout.current = setTimeout(() => {
       setIsUserScrolling(false);
       setTimeout(() => {
@@ -164,11 +166,11 @@ export default function HomeScreen() {
     EVENTS.forEach((_, index) => {
       animateCard(index, index === 0);
     });
-    
+
     const initTimeout = setTimeout(() => {
       startAutoScroll();
     }, 1000);
-    
+
     return () => {
       clearTimeout(initTimeout);
       stopAutoScroll();
@@ -208,10 +210,10 @@ export default function HomeScreen() {
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<any>[]; changed: ViewToken<any>[]; }) => {
     if (viewableItems.length > 0 && !isScrollingRef.current) {
       const newIndex = viewableItems[0].index;
-      
+
       if (newIndex !== null && newIndex !== currentIndex) {
         setCurrentIndex(newIndex);
-        
+
         EVENTS.forEach((_, index) => {
           animateCard(index, index === newIndex);
         });
@@ -221,13 +223,13 @@ export default function HomeScreen() {
 
   const onScroll = useCallback((event: any) => {
     if (isScrollingRef.current) return;
-    
+
     const scrollX = event.nativeEvent.contentOffset.x;
     const index = Math.round(scrollX / (CARD_WIDTH + CARD_SPACING));
-    
+
     if (index >= 0 && index < EVENTS.length && index !== currentIndex) {
       setCurrentIndex(index);
-      
+
       EVENTS.forEach((_, cardIndex) => {
         animateCard(cardIndex, cardIndex === index);
       });
@@ -239,76 +241,76 @@ export default function HomeScreen() {
   ]);
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>      
-    <View style={{ flex: 1, paddingTop: StatusBar.currentHeight, backgroundColor: '#0d0d0d' }}>
-      <LinearGradient
-        colors={['#D0FF00', '#101400']}
-        style={styles.gradient}
-      >
-        <View style={styles.header}>
-          <Text style={[styles.walletId, { color: "#000" }]}>
-            bharathshettyy.cb.id
-          </Text>
-          <View style={styles.headerRight}>
-            <Ionicons name="qr-code-outline" size={24} color="#000" />
-            <Ionicons name="settings-outline" size={24} color="#000" style={{ marginLeft: 16 }} />
-            <Switch value={isDark} onValueChange={toggleTheme} thumbColor="#fff" />
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={{ flex: 1, paddingTop: StatusBar.currentHeight, backgroundColor: '#0d0d0d' }}>
+        <LinearGradient
+          colors={['#D0FF00', '#101400']}
+          style={styles.gradient}
+        >
+          <View style={styles.header}>
+            <Text style={[styles.walletId, { color: "#000", width: 200, fontSize: 15 }]}>
+              {publicKey ? ` ${publicKey.toBase58()}` : 'Not connected'}
+            </Text>
+            <View style={styles.headerRight}>
+              <Ionicons name="qr-code-outline" size={24} color="#000" />
+              <Ionicons name="settings-outline" size={24} color="#000" style={{ marginLeft: 16 }} />
+              <Switch value={isDark} onValueChange={toggleTheme} thumbColor="#fff" />
+            </View>
           </View>
+
+          <View style={styles.searchContainer}>
+            <Ionicons name="search-outline" size={20} color="#888" style={{ marginLeft: 8 }} />
+            <TextInput
+              placeholder="Search for events..."
+              placeholderTextColor="#888"
+              style={styles.searchInput}
+            />
+          </View>
+        </LinearGradient>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity onPress={() => navigation.navigate("MainApp", { screen: "Events" })} >
+            <LinearGradient
+              colors={['#D0FF00', '#404e00']}
+              style={[styles.primaryButton, styles.extraMargin]}
+            >
+              <Text style={styles.buttonText}>Join Event</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate("CreateEvent")}>
+            <LinearGradient
+              colors={['#D0FF00', '#404e00']}
+              style={styles.primaryButton}
+            >
+              <Text style={styles.buttonText}>Create Event</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color="#888" style={{ marginLeft: 8 }} />
-          <TextInput
-            placeholder="Search for events..."
-            placeholderTextColor="#888"
-            style={styles.searchInput}
-          />
-        </View>
-      </LinearGradient>
-      <View style={styles.buttonRow}>
-        <TouchableOpacity onPress={() => navigation.navigate("MainApp", { screen: "Events" })} >
-          <LinearGradient
-            colors={['#D0FF00', '#404e00']}
-            style={[styles.primaryButton, styles.extraMargin]}
-          >
-            <Text style={styles.buttonText}>Join Event</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate("CreateEvent")}>
-          <LinearGradient
-            colors={['#D0FF00', '#404e00']}
-            style={styles.primaryButton}
-          >
-                         <Text style={styles.buttonText}>Create Event</Text>
-           </LinearGradient>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>In the Spotlight</Text>
-      <FlatList
-        ref={carouselRef}
-        data={EVENTS}
-        renderItem={renderEvent}
-        keyExtractor={i => i.id.toString()}
-        horizontal
-        snapToInterval={CARD_WIDTH + CARD_SPACING}
-        decelerationRate="fast"
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        onScrollBeginDrag={handleScrollBegin}
-        onScrollEndDrag={handleScrollEnd}
-        onMomentumScrollEnd={handleScrollEnd}
-        viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
-        initialScrollIndex={0}
-        getItemLayout={(_, index) => ({
-          length: CARD_WIDTH + CARD_SPACING,
-          offset: (CARD_WIDTH + CARD_SPACING) * index,
-          index,
-        })}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.carousel}
-      />
-    </View >
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>In the Spotlight</Text>
+        <FlatList
+          ref={carouselRef}
+          data={EVENTS}
+          renderItem={renderEvent}
+          keyExtractor={i => i.id.toString()}
+          horizontal
+          snapToInterval={CARD_WIDTH + CARD_SPACING}
+          decelerationRate="fast"
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          onScrollBeginDrag={handleScrollBegin}
+          onScrollEndDrag={handleScrollEnd}
+          onMomentumScrollEnd={handleScrollEnd}
+          viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+          initialScrollIndex={0}
+          getItemLayout={(_, index) => ({
+            length: CARD_WIDTH + CARD_SPACING,
+            offset: (CARD_WIDTH + CARD_SPACING) * index,
+            index,
+          })}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.carousel}
+        />
+      </View >
     </SafeAreaView>
   );
 }

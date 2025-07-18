@@ -2,15 +2,29 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useUniteWallet } from '../context/WalletContext';
+import { connectToWallet } from '../lib/wallet/connectWallet';
 import { RootStackParamList } from '../navigation/RootNavigator';
-
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
 
 export default function OnboardingScreen() {
   const navigation = useNavigation<NavProp>();
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const { setPublicKey } = useUniteWallet();
+  const handleConnect = async () => {
+    const address = await connectToWallet();
+    if (address) {
+      setPublicKey(address);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainApp', params: { screen: 'Unite' } }],
+      });
 
+    }
+  };
   const [fontsLoaded] = useFonts({
     'Audiowide': require('../../assets/fonts/Audiowide-Regular.ttf'),
     'Montserrat': require('../../assets/fonts/Montserrat-Regular.ttf'),
@@ -24,10 +38,10 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/limeUniteLogo.jpg')}
+        source={require('../../assets/images/android2.png')}
         style={styles.image}
         resizeMode="contain"
-        
+
       />
       <Text style={styles.title}>Welcome to Unite</Text>
       <Text style={styles.description}>
@@ -36,17 +50,19 @@ export default function OnboardingScreen() {
         <Text style={{ color: '#007bff' }}>privacy policy</Text>
       </Text>
 
-        <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.push('MainApp', { screen: 'Unite' })}>
+      <TouchableOpacity style={styles.primaryButton}
+        onPress={handleConnect}
+      >
         <LinearGradient
           colors={['#D0FF0060', '#D0FF00']}
           style={styles.gradientButton}
         >
-          <Text style={styles.primaryText}>Create new wallet</Text>
+          <Text style={styles.primaryText}>Connect Wallet</Text>
         </LinearGradient>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.push('MainApp', { screen: 'Unite' })}>
-        <Text style={styles.secondaryText}>I already have a wallet</Text>
+        <Text style={styles.secondaryText}>I don&apos;t have a wallet</Text>
       </TouchableOpacity>
     </View>
   );
@@ -58,10 +74,10 @@ const styles = StyleSheet.create({
   title: { color: '#fff', fontSize: 24, fontWeight: '600', textAlign: 'center', marginBottom: 10, fontFamily: 'Audiowide' },
   description: { color: '#aaa', textAlign: 'center', fontSize: 11, marginBottom: 30, fontFamily: 'Montserrat' },
   primaryButton: {
-    borderWidth : 1,
-    borderBottomWidth : 0,
-    borderColor : '#D0FF0090',
-    borderRadius : 25,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: '#D0FF0090',
+    borderRadius: 25,
     marginBottom: 16,
   },
   gradientButton: {
@@ -70,6 +86,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignItems: 'center',
   },
-    primaryText: { color: '#fff', fontSize: 16,  fontFamily: 'Montserrat-Bold', textTransform: 'uppercase' },
+  primaryText: { color: '#fff', fontSize: 16, fontFamily: 'Montserrat-Bold', textTransform: 'uppercase' },
   secondaryText: { color: '#ffffff80', fontSize: 16, fontFamily: 'Montserrat' },
 });

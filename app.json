@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "uniteapp",
+    "name": "unite",
     "slug": "untiteapp",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,14 +13,27 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/android2.png",
+        "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.bharathkshetty.uniteapp"
+      "package": "com.bharathkshetty.uniteapp",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": {
+            "scheme": "uniteapp",
+            "host": "*"
+          },
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -30,10 +43,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/unitesplash.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "image": "./assets/images/splash.png",
+          "resizeMode": "cover",
+          "backgroundColor": "#000000"
         }
       ],
       [
