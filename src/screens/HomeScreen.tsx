@@ -1,9 +1,10 @@
-import { useUniteWallet } from '@/context/WalletContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as SecureStore from 'expo-secure-store';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+
 import {
   Animated,
   Dimensions,
@@ -19,6 +20,7 @@ import {
   View,
   ViewToken
 } from 'react-native';
+
 import { useThemeContext } from '../context/ThemeContext';
 import { RootStackParamList } from '../navigation/RootNavigator';
 
@@ -78,11 +80,22 @@ export default function HomeScreen() {
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
   const isScrollingRef = useRef(false);
-  const { publicKey } = useUniteWallet();
+  const [walletAddress, setWalletAddress] = useState("");
+  const getWalletaddress = async () => {
+    let wallet = await SecureStore.getItemAsync("wallet_address");
+    if (wallet) {
+      setWalletAddress(wallet);
+    }
+  };
+  useEffect(() => {
+    getWalletaddress();
+  }, []);
 
   const animateCard = (index: number, isActive: boolean) => {
     const scale = isActive ? 1 : 0.92;
     const opacity = isActive ? 1 : 0.6;
+
+
 
     Animated.parallel([
       Animated.timing(animatedValues[index], {
@@ -240,6 +253,17 @@ export default function HomeScreen() {
     { viewabilityConfig, onViewableItemsChanged }
   ]);
 
+  const handleLogout = async () => {
+    await SecureStore.deleteItemAsync('unite_auth_token');
+    await SecureStore.deleteItemAsync('wallet_address');
+    console.log('🚪 Logged out: Tokens cleared');
+
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Onboarding' }],
+    });
+  };
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={{ flex: 1, paddingTop: StatusBar.currentHeight, backgroundColor: '#0d0d0d' }}>
@@ -249,12 +273,21 @@ export default function HomeScreen() {
         >
           <View style={styles.header}>
             <Text style={[styles.walletId, { color: "#000", width: 200, fontSize: 15 }]}>
-              {publicKey ? ` ${publicKey.toBase58()}` : 'Not connected'}
+              {walletAddress}
             </Text>
             <View style={styles.headerRight}>
               <Ionicons name="qr-code-outline" size={24} color="#000" />
               <Ionicons name="settings-outline" size={24} color="#000" style={{ marginLeft: 16 }} />
               <Switch value={isDark} onValueChange={toggleTheme} thumbColor="#fff" />
+            </View>
+            <View style={{ margin: 20 }}>
+              <Ionicons
+                name="log-out-outline"
+                size={28}
+                color="white"
+                onPress={handleLogout}
+                style={{ alignSelf: 'flex-end' }}
+              />
             </View>
           </View>
 

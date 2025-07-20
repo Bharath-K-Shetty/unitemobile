@@ -2,40 +2,63 @@ import {
   transact,
   Web3MobileWallet,
 } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
-
 import { PublicKey } from '@solana/web3.js';
-
 import base64 from 'base64-js';
+import * as SecureStore from 'expo-secure-store';
 
 export const APP_IDENTITY = {
   name: 'Unite',
-  uri: 'uniteapp://',  // Your app domain or placeholder
-  icon: 'favicon.ico', // Optional
+  uri: 'uniteapp://',
 };
 
-export async function connectToWallet() {
+
+
+export async function connectToWallet(): Promise<PublicKey | null> {
+
   try {
+    const existingToken = await SecureStore.getItemAsync('unite_auth_token');
+    console.log('Existing token:', existingToken);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     const authResult = await transact(async (wallet: Web3MobileWallet) => {
-      const result = await wallet.authorize({
-        chain: 'solana:devnet',
-        identity: APP_IDENTITY,
-      });
+      try {
+        if (existingToken) {
+          console.log('🔁 Trying reauthorize...');
+          return await wallet.reauthorize({
+            auth_token: existingToken,
+            identity: APP_IDENTITY,
+          });
 
-      return result;
+        } else {
+          console.log('🔓 No token, fresh authorize...');
+          return await wallet.authorize({
+            chain: 'solana:devnet',
+            identity: APP_IDENTITY,
+          });
+        }
+      } catch (err) {
+        console.warn('❌ Reauthorize failed, falling back to fresh authorize...', err);
+        return await wallet.authorize({
+          chain: 'solana:devnet',
+          identity: APP_IDENTITY,
+        });
+      }
     });
+
     const base64Address = authResult.accounts[0].address;
-    console.log('Raw address (Base64):', base64Address);
+    console.log('📦 Raw address (Base64):', base64Address);
 
-    // Decode Base64 string into Uint8Array
     const decodedAddress = base64.toByteArray(base64Address);
-
-    // Construct PublicKey from Uint8Array
     const walletAddress = new PublicKey(decodedAddress);
-    console.log("Wallet address is", walletAddress);
+    console.log('✅ Wallet address:', walletAddress.toBase58());
+    await SecureStore.setItemAsync('wallet_address', walletAddress.toBase58());
+    if (authResult.auth_token) {
+      await SecureStore.setItemAsync('unite_auth_token', authResult.auth_token);
+      console.log('🔐 Saved auth_token to SecureStore.');
+    }
 
     return walletAddress;
   } catch (err) {
-    console.error('Wallet connection failed:', err);
+    console.error('🚨 Wallet connection failed:', err);
     return null;
   }
 }

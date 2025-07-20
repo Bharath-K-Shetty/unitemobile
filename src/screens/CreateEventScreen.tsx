@@ -1,8 +1,8 @@
-// src/screens/CreateEventScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as SecureStore from 'expo-secure-store';
 import React, { useState } from 'react';
 import {
   Image,
@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { createEventMobile, initializeOrganizerMobile } from '../lib/getUniteProgram';
 
 export default function CreateEventScreen() {
   const [eventName, setEventName] = useState('');
@@ -25,6 +26,7 @@ export default function CreateEventScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const navigation = useNavigation();
 
+  const publicKey = SecureStore.getItem("wallet_address");
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -72,21 +74,49 @@ export default function CreateEventScreen() {
     setShowDatePicker(false);
   };
 
-  const handleDateConfirm = () => {
-    setShowDatePicker(false);
+
+
+  const handleCreate = async () => {
+    if (!publicKey) {
+      alert('Wallet not connected');
+      return;
+    }
+
+    try {
+      // Try to initialize organizer (if already initialized, this may throw and we ignore it)
+      try {
+        await initializeOrganizerMobile();
+        console.log("Organizer initialized.");
+      } catch (initErr) {
+        console.log("Organizer may already be initialized. Continuing...", initErr);
+      }
+
+      const eventData = {
+        title: eventName,
+        description: '', // Optional
+        deadline: Math.floor(deadline.getTime() / 1000),
+        ticket_price: BigInt(parseFloat(ticketPrice) * 1e9),
+        quorum: parseInt(minQuorum),
+        maximum_capacity: parseInt(maxQuorum),
+      };
+
+      const result = await createEventMobile(eventData);
+
+      console.log('Created event:', result);
+      alert('Event created successfully!');
+      navigation.goBack();
+    } catch (err: any) {
+      if (err.message?.includes("CancellationException")) {
+        alert("You cancelled the transaction.");
+      } else {
+        console.error('Error creating event:', err);
+        alert('Failed to create event. See console for details.');
+      }
+    }
   };
 
-  const handleCreate = () => {
-    // TODO: Submit logic here
-    console.log({
-      eventName,
-      image,
-      minQuorum,
-      maxQuorum,
-      ticketPrice,
-      deadline,
-    });
-  };
+
+
 
   const formatDateTime = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -321,7 +351,7 @@ const styles = StyleSheet.create({
   imageUpload: {
     backgroundColor: '#222',
     borderRadius: 10,
-    height: 160,
+    height: 320,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -334,7 +364,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 10,
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
 
   datePickerButton: {

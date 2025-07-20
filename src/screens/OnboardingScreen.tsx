@@ -2,7 +2,6 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useUniteWallet } from '../context/WalletContext';
 import { connectToWallet } from '../lib/wallet/connectWallet';
@@ -12,7 +11,6 @@ type NavProp = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
 
 export default function OnboardingScreen() {
   const navigation = useNavigation<NavProp>();
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const { setPublicKey } = useUniteWallet();
   const handleConnect = async () => {
     const address = await connectToWallet();
