@@ -4,54 +4,41 @@ import { transact, Web3MobileWallet } from '@solana-mobile/mobile-wallet-adapter
 import { Connection, Keypair, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
 import * as SecureStore from 'expo-secure-store';
 import idl from '../idl/unite.json'; // replace with your actual path to the IDL
-import { APP_IDENTITY } from '../lib/wallet/connectWallet'; // optional if using a predefined identity
 
 const programId = new PublicKey(idl.address);
 
 // This is the custom anchor wallet that supports MWA
-const createAnchorWallet = async (): Promise<Wallet> => {
-  let _publicKey: PublicKey | null = null;
-  async function getAuthToken(): Promise<string> {
-    const token = await SecureStore.getItemAsync('unite_auth_token');
-    if (!token) {
-      throw new Error("Missing auth token. Wallet not authorized yet.");
-    }
-    return token;
+export async function createAnchorWallet(): Promise<Wallet> {
+  const walletAddressStr = await SecureStore.getItemAsync('wallet_address');
+
+  if (!walletAddressStr) {
+    throw new Error('Missing wallet auth or address in SecureStore');
   }
-  const token = await getAuthToken();
+
+  const publicKey = new PublicKey(walletAddressStr);
+
   return {
     get publicKey() {
-      return _publicKey!;
+      return publicKey;
     },
 
     async signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T> {
       return await transact(async (wallet: Web3MobileWallet) => {
-        const auth = await wallet.reauthorize({
-          auth_token: token,
-          identity: APP_IDENTITY,
-        });
-
-        _publicKey = new PublicKey(auth.accounts[0].address);
         const [signed] = await wallet.signTransactions({ transactions: [tx] });
         return signed;
       });
     },
 
     async signAllTransactions<T extends Transaction | VersionedTransaction>(txs: T[]): Promise<T[]> {
-
       return await transact(async (wallet: Web3MobileWallet) => {
-        const auth = await wallet.reauthorize({
-          auth_token: token,
-          identity: APP_IDENTITY,
-        });
-
-        _publicKey = new PublicKey(auth.accounts[0].address);
         return await wallet.signTransactions({ transactions: txs });
       });
     },
-    payer: Keypair.generate(),
+
+    // Dummy payer; not used since signing is delegated to mobile wallet
+    payer: {} as Keypair
   };
-};
+}
 
 export const getAnchorPrograms = async (connection: Connection) => {
   const anchorWallet = await createAnchorWallet();

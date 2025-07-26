@@ -1,7 +1,11 @@
 // src/screens/ProfileScreen.tsx
-import { useUniteWallet } from '@/context/WalletContext';
+import { initOrganizer } from '@/lib/getUniteProgram';
+import { useAuthorization } from '@/utils/useAuthorization';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { Connection } from '@solana/web3.js';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as SecureStore from 'expo-secure-store';
 import React from 'react';
 import {
   Image,
@@ -14,14 +18,28 @@ import {
 } from 'react-native';
 
 const ProfileScreen = () => {
-  const { publicKey } = useUniteWallet();
+  const publicKey = SecureStore.getItem("wallet_address");
+  console.log("Public Key", publicKey);
+  const navigation = useNavigation();
+  const { authorizeSession } = useAuthorization();
+
+  const handleInitialize = async () => {
+    try {
+      const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+      await initOrganizer(connection, authorizeSession);
+      alert("✅ Organizer verified successfully!");
+    } catch (err: any) {
+      console.error(err);
+      alert(`❌ Error verifying organizer: ${err.message}`);
+    }
+  };
   return (
     <View style={{ flex: 1, paddingTop: StatusBar.currentHeight, backgroundColor: '#0d0d0d' }}>
       <ScrollView style={styles.container}>
         <LinearGradient colors={['#D0FF00', '#101400']} style={styles.gradient}>
           <View style={styles.header}>
             <TouchableOpacity>
-              <Ionicons name="arrow-back" size={24} color="#fff" />
+              <Ionicons name="arrow-back" size={24} color="#fff" onPress={() => navigation.goBack()} />
             </TouchableOpacity>
             <Text style={styles.headerText}>Profile</Text>
           </View>
@@ -32,7 +50,7 @@ const ProfileScreen = () => {
               style={styles.avatar}
             />
             <View style={{ marginLeft: 12, width: 200 }}>
-              <Text style={styles.profileName}>  {publicKey ? ` ${publicKey.toBase58()}` : 'Not connected'}</Text>
+              <Text style={styles.profileName}>  {publicKey ? ` ${publicKey}` : 'Not connected'}</Text>
               <Text style={styles.profilePhone}>+91 7795116048</Text>
             </View>
             <TouchableOpacity style={{ marginLeft: 'auto' }}>
@@ -49,9 +67,12 @@ const ProfileScreen = () => {
           <BookingCard icon="guitar-electric" label="Event tickets" />
         </View>
 
-        {/* Vouchers */}
-        <SectionTitle title="Vouchers" />
-        <ListItem icon="gift-outline" label="Collected vouchers" />
+
+        <TouchableOpacity style={styles.initilizeButton}
+          onPress={handleInitialize}
+        >
+          <Text style={styles.initilizeText}>Verify as a Organizer</Text>
+        </TouchableOpacity>
 
         {/* Payments */}
         <SectionTitle title="Payments" />
@@ -103,6 +124,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
+  },
+  initilizeButton: {
+    backgroundColor: '#D0FF00',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 12,
+    marginEnd: 20,
+    marginStart: 20
+  },
+  initilizeText: {
+    fontWeight: 'bold',
+    color: '#000',
+    fontSize: 16,
   },
   headerText: {
     fontSize: 18,

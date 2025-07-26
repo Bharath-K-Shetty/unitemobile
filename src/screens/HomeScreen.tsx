@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useMobileWallet } from '@/utils/useMobileWallet';
 import {
   Animated,
   Dimensions,
@@ -20,7 +21,6 @@ import {
   View,
   ViewToken
 } from 'react-native';
-
 import { useThemeContext } from '../context/ThemeContext';
 import { RootStackParamList } from '../navigation/RootNavigator';
 
@@ -81,6 +81,7 @@ export default function HomeScreen() {
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
   const isScrollingRef = useRef(false);
   const [walletAddress, setWalletAddress] = useState("");
+  const { disconnect } = useMobileWallet();
   const getWalletaddress = async () => {
     let wallet = await SecureStore.getItemAsync("wallet_address");
     if (wallet) {
@@ -254,6 +255,7 @@ export default function HomeScreen() {
   ]);
 
   const handleLogout = async () => {
+    await disconnect();
     await SecureStore.deleteItemAsync('unite_auth_token');
     await SecureStore.deleteItemAsync('wallet_address');
     console.log('🚪 Logged out: Tokens cleared');
@@ -272,15 +274,11 @@ export default function HomeScreen() {
           style={styles.gradient}
         >
           <View style={styles.header}>
-            <Text style={[styles.walletId, { color: "#000", width: 200, fontSize: 15 }]}>
-              {walletAddress}
-            </Text>
+            <Ionicons name="person-circle-outline" size={28} onPress={() => navigation.navigate("ProfileScreen")} />
             <View style={styles.headerRight}>
               <Ionicons name="qr-code-outline" size={24} color="#000" />
-              <Ionicons name="settings-outline" size={24} color="#000" style={{ marginLeft: 16 }} />
-              <Switch value={isDark} onValueChange={toggleTheme} thumbColor="#fff" />
-            </View>
-            <View style={{ margin: 20 }}>
+              <Ionicons name="settings-outline" size={24} color="#000" style={{ marginLeft: 16, }} />
+              <Switch value={isDark} onValueChange={toggleTheme} thumbColor="#fff" style={{ marginLeft: 16, marginRight: 16 }} />
               <Ionicons
                 name="log-out-outline"
                 size={28}
@@ -289,6 +287,7 @@ export default function HomeScreen() {
                 style={{ alignSelf: 'flex-end' }}
               />
             </View>
+
           </View>
 
           <View style={styles.searchContainer}>

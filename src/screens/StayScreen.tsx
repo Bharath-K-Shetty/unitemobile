@@ -20,12 +20,6 @@ import {
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.9;
 
-const ARTISTS = [
-  { id: '1', name: 'A. R. Rahman', image: require('../../assets/images/event1.jpg') },
-  { id: '2', name: 'Enrique Iglesias', image: require('../../assets/images/event1.jpg') },
-  { id: '3', name: 'Hiphop Tamizha Adhi', image: require('../../assets/images/event1.jpg') },
-];
-
 const EVENTS = [
   {
     id: '1',
@@ -37,27 +31,23 @@ const EVENTS = [
     title: 'Bandaje Falls Trek',
     image: require('../../assets/images/event6.jpg'),
   },
-  {
-    id: '3',
-    title: 'Bandaje Falls Trek',
-    image: require('../../assets/images/event6.jpg'),
-  },
 ];
 
-const EventScreen = () => {
+const StayScreen = () => {
   return (
     <View style={{ flex: 1, paddingTop: StatusBar.currentHeight || 24, backgroundColor: '#0d0d0d' }}>
       <ScrollView style={styles.container}>
 
-        <LinearGradient colors={['#D0FF00', '#101400']} style={styles.gradient}>
+        <LinearGradient colors={['#ff6500', '#101400']} style={styles.gradient}>
           <View style={styles.searchContainer}>
             <Ionicons name="search-outline" size={20} color="#888" style={{ marginLeft: 8 }} />
             <TextInput
-              placeholder="Search for Events"
+              placeholder="Search for Hotels"
               placeholderTextColor="#888"
               style={styles.searchInput}
             />
           </View>
+
 
 
         </LinearGradient>
@@ -99,7 +89,7 @@ const EventScreen = () => {
   );
 };
 
-export default EventScreen;
+export default StayScreen;
 
 const styles = StyleSheet.create({
   container: {

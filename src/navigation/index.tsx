@@ -4,13 +4,13 @@ import { useTheme } from '@react-navigation/native';
 import React from 'react';
 
 import EventScreen from '@/screens/EventScreen';
-import ProfileScreen from '@/screens/ProfileScreen';
+import StayScreen from '@/screens/StayScreen';
 import HomeScreen from '../screens/HomeScreen';
 
 export type TabParamList = {
   Unite: undefined;
   Events: undefined;
-  Profile: undefined;
+  Stay: undefined
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -30,8 +30,8 @@ const Navigation = () => {
             iconName = 'home-outline';
           } else if (route.name === 'Events') {
             iconName = 'calendar-outline';
-          } else if (route.name === 'Profile') {
-            iconName = 'person-circle-outline';
+          } else if (route.name === 'Stay') {
+            iconName = 'bed-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -46,7 +46,8 @@ const Navigation = () => {
     >
       <Tab.Screen name="Unite" component={HomeScreen} />
       <Tab.Screen name="Events" component={EventScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+
+      <Tab.Screen name="Stay" component={StayScreen} />
     </Tab.Navigator>
   );
 };

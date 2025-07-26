@@ -1,28 +1,36 @@
+import { useMobileWallet } from '@/utils/useMobileWallet';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as SecureStore from 'expo-secure-store';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useUniteWallet } from '../context/WalletContext';
-import { connectToWallet } from '../lib/wallet/connectWallet';
 import { RootStackParamList } from '../navigation/RootNavigator';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
 
 export default function OnboardingScreen() {
   const navigation = useNavigation<NavProp>();
-  const { setPublicKey } = useUniteWallet();
-  const handleConnect = async () => {
-    const address = await connectToWallet();
-    if (address) {
-      setPublicKey(address);
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'MainApp', params: { screen: 'Unite' } }],
-      });
 
+  const { connect } = useMobileWallet();
+
+  const handleConnect = async () => {
+    try {
+      const account = await connect();
+      if (account?.address) {
+        await SecureStore.setItemAsync('wallet_address', account.publicKey.toBase58());
+
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainApp', params: { screen: 'Unite' } }],
+        });
+      }
+    } catch (error) {
+      console.error('Wallet connection failed:', error);
+      // Optionally show error UI
     }
   };
+
   const [fontsLoaded] = useFonts({
     'Audiowide': require('../../assets/fonts/Audiowide-Regular.ttf'),
     'Montserrat': require('../../assets/fonts/Montserrat-Regular.ttf'),

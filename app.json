@@ -13,8 +13,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/android2.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/images/lightaicon.png",
+        "backgroundColor": "#D0FF00"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
@@ -43,9 +43,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash.png",
+          "image": "./assets/images/lightsplash.png",
           "resizeMode": "cover",
-          "backgroundColor": "#000000"
+          "backgroundColor": "#D0FF00"
         }
       ],
       [

@@ -1,179 +1,140 @@
-import {
-  transact,
-  Web3MobileWallet,
-} from "@solana-mobile/mobile-wallet-adapter-protocol-web3js";
+import { getAnchorPrograms } from "@/utils/getAnchorProgram";
+import { BN } from "@coral-xyz/anchor";
+import { transact, Web3MobileWallet } from "@solana-mobile/mobile-wallet-adapter-protocol-web3js";
 import {
   Connection,
   PublicKey,
   SystemProgram,
-  Transaction,
-  TransactionInstruction,
+  TransactionMessage,
+  VersionedTransaction
 } from "@solana/web3.js";
-import base64 from 'base64-js';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from "expo-secure-store";
+import rawIdl from "../idl/unite.json";
+import { APP_IDENTITY } from "../lib/wallet/connectWallet";
 
-// Discriminator bytes
-const CREATE_EVENT_DISCRIMINATOR = [49, 219, 29, 203, 22, 98, 100, 87];
-const INIT_ORGANIZER_DISCRIMINATOR = [223, 252, 246, 108, 132, 141, 11, 217];
+const programId = new PublicKey(rawIdl.address);
+console.log("program id is", programId);
 
-// Program ID
-const PROGRAM_ID = new PublicKey("nTqEj8gr65fCtYhoZNKbK4ri2QyMY7HvrFeBzVuFRqU");
-
-// Seeds
-const ORGANIZER_SEED = Buffer.from("organizer");
-const EVENT_SEED = Buffer.from("event");
-
-// RPC connection
-const connection = new Connection("https://api.devnet.solana.com", "confirmed");
-async function getAuthToken(): Promise<string> {
-  const token = await SecureStore.getItemAsync('unite_auth_token');
-  if (!token) {
-    throw new Error("Missing auth token. Wallet not authorized yet.");
-  }
-  return token;
+function getOrganizerPDA(authority: PublicKey) {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("organizer"), authority.toBuffer()],
+    programId
+  );
 }
 
+function getEventPDA(authority: PublicKey, eventCount: number) {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("event"),
+      authority.toBuffer(),
+      Buffer.from(new BN(eventCount).toArray("le", 4)),
+    ],
+    programId
+  );
+}
 
+export async function initOrganizer(connection: Connection, authorizeSession: (wallet: Web3MobileWallet) => Promise<void>) {
+  const { program } = await getAnchorPrograms(connection);
+  await transact(async (wallet) => {
+    const walletadd = await SecureStore.getItemAsync("wallet_address");
 
-
-export async function initializeOrganizerMobile() {
-  console.log("🚀 Attempting to create event...");
-  const token = await getAuthToken();
-  console.log("Tpken is ", token);
-  return await transact(async (wallet: Web3MobileWallet) => {
-    console.log("Inside transact");
-    const { accounts } = await wallet.reauthorize({
-      auth_token: token,
-      identity: {
-        name: "Unite App",
-      },
-    });
-
-
-    const base64Address = accounts[0].address;
-    const decodedAddress = base64.toByteArray(base64Address);
-    const publicKey = new PublicKey(decodedAddress);
-
-    const [organizerPDA] = PublicKey.findProgramAddressSync(
-      [ORGANIZER_SEED, publicKey.toBuffer()],
-      PROGRAM_ID
-    );
-    console.log("Check if organizer account already exists");
-    // ✅ Check if organizer account already exists
-    const accountInfo = await connection.getAccountInfo(organizerPDA);
-    if (accountInfo !== null) {
-      console.log("Organizer already initialized ✅");
+    if (!walletadd) {
+      throw new Error("Publickey not found");
+    }
+    console.log("authority is", walletadd);
+    const authority = new PublicKey(walletadd);
+    const [organizerPda] = getOrganizerPDA(authority);
+    try {
+      const existing = await program.account.organizerAccount.fetch(organizerPda);
+      console.log("⚠️ Organizer already initialized:", existing);
       return;
+    } catch (e) {
+      console.log("✅ Organizer not initialized yet, continuing...");
     }
 
-    // Organizer not found, so proceed with initialization
-    const ix = new TransactionInstruction({
-      programId: PROGRAM_ID,
-      keys: [
-        { pubkey: organizerPDA, isSigner: false, isWritable: true },
-        { pubkey: publicKey, isSigner: true, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      data: Buffer.from(INIT_ORGANIZER_DISCRIMINATOR),
-    });
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
 
-    const tx = new Transaction().add(ix);
-    tx.feePayer = publicKey;
-    tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-    console.log("📝 Prepared transaction, attempting to sign and send...");
+    const initIx = await program.methods
+      .initializeOrganizer()
+      .accounts({
+        organizer: organizerPda,
+        authority,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction();
 
-    const signatures = await wallet.signAndSendTransactions({ transactions: [tx] });
-    const signature = signatures[0];
+    const message = new TransactionMessage({
+      payerKey: authority,
+      recentBlockhash: blockhash,
+      instructions: [initIx],
+    }).compileToV0Message();
 
-    console.log("✅ Organizer initialized:", signature);
-    return signature;
+    const versionedTx = new VersionedTransaction(message);
+    await authorizeSession(wallet);
+    const [sig] = await wallet.signAndSendTransactions({ transactions: [versionedTx] });
+    await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight });
   });
+
 }
-
-
-export async function createEventMobile({
-  title,
-  description,
-  deadline,
-  ticket_price,
-  quorum,
-  maximum_capacity,
-}: {
-  title: string;
+export async function createEvent(connection: Connection, params: {
+  eventName: string;
   description: string;
-  deadline: number; // i64
-  ticket_price: bigint; // u64
-  quorum: number; // u32
-  maximum_capacity: number; // u32
+  deadline: number;
+  feeLamports: number;
+  quorum: number;
+  capacity: number;
 }) {
-  return await transact(async (wallet: Web3MobileWallet) => {
-    const token = await getAuthToken();
-    const { accounts } = await wallet.reauthorize({
-      auth_token: token,
-      identity: {
-        name: "Unite App",
+  const { provider, anchorWallet, program } = await getAnchorPrograms(connection);
+  const authority = anchorWallet.publicKey!;
+  const [organizerPda] = getOrganizerPDA(authority);
 
-      },
+  const organizer = await program.account.organizer.fetch(organizerPda);
+  const eventCount = (organizer as any).eventCount.toNumber();
+  const [eventPda] = getEventPDA(authority, eventCount);
+
+  await transact(async (wallet: Web3MobileWallet) => {
+    const storedToken = await SecureStore.getItemAsync("unite_auth_token");
+    const auth = await wallet.authorize({
+      chain: "solana:devnet",
+      identity: APP_IDENTITY,
+      auth_token: storedToken || undefined,
+    });
+    await SecureStore.setItemAsync("unite_auth_token", auth.auth_token);
+
+    const { blockhash } = await connection.getLatestBlockhash();
+    console.log("creating tx and blockhash is ", blockhash);
+    const createIx = await program.methods
+      .createEvent(
+        params.eventName,
+        params.description,
+        new BN(params.deadline),
+        new BN(params.feeLamports),
+        new BN(params.quorum),
+        new BN(params.capacity)
+      )
+      .accounts({
+        organizer: organizerPda,
+        event: eventPda,
+        authority,
+        systemProgram: SystemProgram.programId,
+      })
+      .transaction();
+
+    const msg = new TransactionMessage({
+      payerKey: authority,
+      recentBlockhash: blockhash,
+      instructions: createIx.instructions,
+    }).compileToV0Message();
+    const slot = await connection.getSlot();
+
+    const tx = new VersionedTransaction(msg);
+    console.log("Transaction is", tx);
+    const sigs = await wallet.signAndSendTransactions({
+      transactions: [tx],
+      minContextSlot: slot
     });
 
-
-    const base64Address = accounts[0].address;
-    const decodedAddress = base64.toByteArray(base64Address);
-    const publicKey = new PublicKey(decodedAddress);
-
-    const [organizerPDA] = PublicKey.findProgramAddressSync(
-      [ORGANIZER_SEED, publicKey.toBuffer()],
-      PROGRAM_ID
-    );
-
-    // You should fetch this dynamically from organizer account in real apps
-    const event_count = 0;
-
-    const [eventPDA] = PublicKey.findProgramAddressSync(
-      [
-        EVENT_SEED,
-        publicKey.toBuffer(),
-        Buffer.from(Uint8Array.of(...new Uint8Array(new Uint32Array([event_count]).buffer))),
-      ],
-      PROGRAM_ID
-    );
-
-    const titleBuf = Buffer.from(title, "utf8");
-    const descBuf = Buffer.from(description, "utf8");
-
-    const data = Buffer.concat([
-      Buffer.from(CREATE_EVENT_DISCRIMINATOR),
-      Buffer.from(Uint8Array.of(titleBuf.length, ...titleBuf)),
-      Buffer.from(Uint8Array.of(descBuf.length, ...descBuf)),
-      Buffer.alloc(8), // deadline
-      Buffer.alloc(8), // ticket_price
-      Buffer.alloc(4), // quorum
-      Buffer.alloc(4), // max_capacity
-    ]);
-
-    data.writeBigInt64LE(BigInt(deadline), data.length - 24);
-    data.writeBigUInt64LE(ticket_price, data.length - 16);
-    data.writeUInt32LE(quorum, data.length - 8);
-    data.writeUInt32LE(maximum_capacity, data.length - 4);
-
-    const ix = new TransactionInstruction({
-      programId: PROGRAM_ID,
-      keys: [
-        { pubkey: organizerPDA, isSigner: false, isWritable: true },
-        { pubkey: eventPDA, isSigner: false, isWritable: true },
-        { pubkey: publicKey, isSigner: true, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      data,
-    });
-
-    const tx = new Transaction().add(ix);
-    tx.feePayer = publicKey;
-    tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-
-    const signatures = await wallet.signAndSendTransactions({ transactions: [tx] });
-    const signature = signatures[0];
-    console.log("✅ Event created:", signature);
-    return signature;
+    await connection.confirmTransaction(sigs[0], "confirmed");
+    console.log("🎉 Event created:", sigs[0]);
   });
 }

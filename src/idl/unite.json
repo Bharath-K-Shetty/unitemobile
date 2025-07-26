@@ -1,86 +1,51 @@
 {
-  "address": "nTqEj8gr65fCtYhoZNKbK4ri2QyMY7HvrFeBzVuFRqU",
-  "metadata": {
-    "name": "unite",
-    "version": "0.1.0",
-    "spec": "0.1.0",
-    "description": "Created with Anchor"
-  },
+  "version": "0.1.0",
+  "name": "unite",
+  "address": "HgYaGfeHEfgM6BFeTCGZsP9rNoTLkrnsxXv3nsAJQwuF",
   "instructions": [
     {
-      "name": "create_event",
-      "discriminator": [
-        49,
-        219,
-        29,
-        203,
-        22,
-        98,
-        100,
-        87
-      ],
+      "name": "initializeOrganizer",
       "accounts": [
         {
           "name": "organizer",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  103,
-                  97,
-                  110,
-                  105,
-                  122,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
-        },
-        {
-          "name": "event",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  118,
-                  101,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              },
-              {
-                "kind": "account",
-                "path": "organizer.event_count",
-                "account": "OrganizerAccount"
-              }
-            ]
-          }
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "authority",
-          "writable": true,
-          "signer": true
+          "isMut": true,
+          "isSigner": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "createEvent",
+      "accounts": [
+        {
+          "name": "organizer",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "event",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -97,7 +62,7 @@
           "type": "i64"
         },
         {
-          "name": "ticket_price",
+          "name": "ticketPrice",
           "type": "u64"
         },
         {
@@ -105,92 +70,29 @@
           "type": "u32"
         },
         {
-          "name": "maximum_capacity",
+          "name": "maximumCapacity",
           "type": "u32"
         }
       ]
-    },
-    {
-      "name": "initialize_organizer",
-      "discriminator": [
-        223,
-        252,
-        246,
-        108,
-        132,
-        141,
-        11,
-        217
-      ],
-      "accounts": [
-        {
-          "name": "organizer",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  103,
-                  97,
-                  110,
-                  105,
-                  122,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
     }
   ],
   "accounts": [
     {
-      "name": "EventAccount",
-      "discriminator": [
-        98,
-        136,
-        32,
-        165,
-        133,
-        231,
-        243,
-        154
-      ]
-    },
-    {
       "name": "OrganizerAccount",
-      "discriminator": [
-        68,
-        201,
-        38,
-        125,
-        135,
-        112,
-        11,
-        149
-      ]
-    }
-  ],
-  "types": [
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "eventCount",
+            "type": "u32"
+          }
+        ]
+      }
+    },
     {
       "name": "EventAccount",
       "type": {
@@ -198,7 +100,7 @@
         "fields": [
           {
             "name": "organizer",
-            "type": "pubkey"
+            "type": "publicKey"
           },
           {
             "name": "title",
@@ -213,7 +115,7 @@
             "type": "i64"
           },
           {
-            "name": "ticket_price",
+            "name": "ticketPrice",
             "type": "u64"
           },
           {
@@ -225,36 +127,20 @@
             "type": "u32"
           },
           {
-            "name": "maximum_capacity",
+            "name": "maximumCapacity",
             "type": "u32"
           },
           {
-            "name": "is_cancelled",
+            "name": "isCancelled",
             "type": "bool"
           },
           {
-            "name": "is_confirmed",
+            "name": "isConfirmed",
             "type": "bool"
           },
           {
             "name": "bump",
             "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "OrganizerAccount",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authority",
-            "type": "pubkey"
-          },
-          {
-            "name": "event_count",
-            "type": "u32"
           }
         ]
       }

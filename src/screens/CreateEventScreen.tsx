@@ -1,3 +1,4 @@
+import { useConnection } from '@/utils/ConnectionProvider';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
@@ -14,8 +15,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { createEventMobile, initializeOrganizerMobile } from '../lib/getUniteProgram';
-
+import { createEvent } from "../lib/getUniteProgram";
 export default function CreateEventScreen() {
   const [eventName, setEventName] = useState('');
   const [image, setImage] = useState<string | null>(null);
@@ -74,45 +74,32 @@ export default function CreateEventScreen() {
     setShowDatePicker(false);
   };
 
+  const { connection } = useConnection();
 
+  const handleCreateEvent = async () => {
 
-  const handleCreate = async () => {
-    if (!publicKey) {
-      alert('Wallet not connected');
+    if (!eventName || !minQuorum || !maxQuorum || !ticketPrice) {
+      alert('Please fill in all fields');
       return;
     }
-
     try {
-      // Try to initialize organizer (if already initialized, this may throw and we ignore it)
-      try {
-        await initializeOrganizerMobile();
-        console.log("Organizer initialized.");
-      } catch (initErr) {
-        console.log("Organizer may already be initialized. Continuing...", initErr);
-      }
-
-      const eventData = {
-        title: eventName,
-        description: '', // Optional
+      // const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+      await createEvent(connection, {
+        eventName,
+        description: '',
         deadline: Math.floor(deadline.getTime() / 1000),
-        ticket_price: BigInt(parseFloat(ticketPrice) * 1e9),
-        quorum: parseInt(minQuorum),
-        maximum_capacity: parseInt(maxQuorum),
-      };
+        feeLamports: Math.floor(parseFloat(ticketPrice) * 1e9),
+        quorum: parseInt(minQuorum, 10),
+        capacity: parseInt(maxQuorum, 10),
+      });
 
-      const result = await createEventMobile(eventData);
-
-      console.log('Created event:', result);
       alert('Event created successfully!');
       navigation.goBack();
     } catch (err: any) {
-      if (err.message?.includes("CancellationException")) {
-        alert("You cancelled the transaction.");
-      } else {
-        console.error('Error creating event:', err);
-        alert('Failed to create event. See console for details.');
-      }
+      console.error(err);
+      alert(`Error: ${err.message}`);
     }
+    console.log("hello")
   };
 
 
@@ -189,7 +176,7 @@ export default function CreateEventScreen() {
           <Ionicons name="calendar-outline" size={20} color="#888" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleCreate}>
+        <TouchableOpacity style={styles.submitButton} onPress={handleCreateEvent}>
           <Text style={styles.submitText}>Create Event</Text>
         </TouchableOpacity>
       </View>
