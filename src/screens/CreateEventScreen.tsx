@@ -17,6 +17,7 @@ import {
   View
 } from 'react-native';
 import { createEvent } from "../lib/getUniteProgram";
+
 export default function CreateEventScreen() {
   const [eventName, setEventName] = useState('');
   const [image, setImage] = useState<string | null>(null);
@@ -76,8 +77,6 @@ export default function CreateEventScreen() {
     setShowDatePicker(false);
   };
 
-  // const { connection } = useConnection();
-
   const handleCreateEvent = async () => {
 
     if (!eventName || !minQuorum || !maxQuorum || !ticketPrice) {
@@ -93,10 +92,18 @@ export default function CreateEventScreen() {
         feeLamports: Math.floor(parseFloat(ticketPrice) * 1e9),
         quorum: parseInt(minQuorum, 10),
         capacity: parseInt(maxQuorum, 10),
+        // image: image
       });
 
+
+      // if (image && eventPda) {
+      //   await uploadEventImage(image, "F6T5vwfpHj9MhUEmbMN5ceRgYrfDUcVEJ8GvcXRhsX97");
+      // }
       alert('Event created successfully!');
-      navigation.goBack();
+      setTimeout(() => {
+        navigation.goBack();
+      }, 3000);
+
     } catch (err: any) {
       console.error(err);
       alert(`Error: ${err.message}`);
