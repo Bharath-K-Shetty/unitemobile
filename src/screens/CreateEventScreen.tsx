@@ -1,6 +1,7 @@
-import { useConnection } from '@/utils/ConnectionProvider';
+import { useMobileWallet } from '@/utils/useMobileWallet';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { Connection } from '@solana/web3.js';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
@@ -27,6 +28,7 @@ export default function CreateEventScreen() {
   const navigation = useNavigation();
 
   const publicKey = SecureStore.getItem("wallet_address");
+  const wallet = useMobileWallet()
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -74,7 +76,7 @@ export default function CreateEventScreen() {
     setShowDatePicker(false);
   };
 
-  const { connection } = useConnection();
+  // const { connection } = useConnection();
 
   const handleCreateEvent = async () => {
 
@@ -83,8 +85,8 @@ export default function CreateEventScreen() {
       return;
     }
     try {
-      // const connection = new Connection("https://api.devnet.solana.com", "confirmed");
-      await createEvent(connection, {
+      const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+      await createEvent(connection, wallet, {
         eventName,
         description: '',
         deadline: Math.floor(deadline.getTime() / 1000),

@@ -1,6 +1,7 @@
 // src/screens/ProfileScreen.tsx
 import { initOrganizer } from '@/lib/getUniteProgram';
 import { useAuthorization } from '@/utils/useAuthorization';
+import { useMobileWallet } from '@/utils/useMobileWallet';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Connection } from '@solana/web3.js';
@@ -19,14 +20,67 @@ import {
 
 const ProfileScreen = () => {
   const publicKey = SecureStore.getItem("wallet_address");
-  console.log("Public Key", publicKey);
+  const wallet = useMobileWallet();
   const navigation = useNavigation();
   const { authorizeSession } = useAuthorization();
 
+  // const handleInitialize = async () => {
+  //   try {
+  //     const publicKeyStr = await SecureStore.getItemAsync("wallet_address");
+  //     if (!publicKeyStr) {
+  //       console.warn("No wallet address found in SecureStore.");
+  //       return;
+  //     }
+
+  //     const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+
+
+  //     const publicKey = new PublicKey(publicKeyStr);
+  //     const destination = new PublicKey("8MPs4Am9W8vMfpqnYB96MKHGC6yy83Eq1d4Rc455bVFL");
+
+  //     const {
+  //       context: { slot: minContextSlot },
+  //       value: latestBlockhash,
+  //     } = await connection.getLatestBlockhashAndContext();
+
+  //     const instructions = [
+  //       SystemProgram.transfer({
+  //         fromPubkey: publicKey,
+  //         toPubkey: destination,
+  //         lamports: 0.001 * LAMPORTS_PER_SOL,
+  //       }),
+  //     ];
+
+  //     const message = new TransactionMessage({
+  //       payerKey: publicKey,
+  //       recentBlockhash: latestBlockhash.blockhash,
+  //       instructions,
+  //     }).compileToLegacyMessage();
+
+  //     const transaction = new VersionedTransaction(message);
+
+  //     // ✅ No serialization. Use direct signAndSendTransaction
+  //     const signature = await wallet.signAndSendTransaction(transaction, minContextSlot);
+
+  //     // ✅ Confirm transaction
+  //     await connection.confirmTransaction(
+  //       {
+  //         signature,
+  //         ...latestBlockhash,
+  //       },
+  //       "confirmed"
+  //     );
+
+  //     console.log("✅ Signature:", signature);
+
+  //   } catch (e) {
+  //     console.error("❌ Transaction failed:", e);
+  //   }
+  // };
   const handleInitialize = async () => {
     try {
       const connection = new Connection("https://api.devnet.solana.com", "confirmed");
-      await initOrganizer(connection, authorizeSession);
+      await initOrganizer(connection, wallet);
       alert("✅ Organizer verified successfully!");
     } catch (err: any) {
       console.error(err);
@@ -59,13 +113,7 @@ const ProfileScreen = () => {
           </View>
         </LinearGradient>
 
-        {/* All Bookings */}
-        <SectionTitle title="All bookings" />
-        <View style={styles.bookingsRow}>
-          <BookingCard icon="silverware-fork-knife" label="Table bookings" />
-          <BookingCard icon="movie-open" label="Movie tickets" />
-          <BookingCard icon="guitar-electric" label="Event tickets" />
-        </View>
+
 
 
         <TouchableOpacity style={styles.initilizeButton}
@@ -74,24 +122,12 @@ const ProfileScreen = () => {
           <Text style={styles.initilizeText}>Verify as a Organizer</Text>
         </TouchableOpacity>
 
-        {/* Payments */}
-        <SectionTitle title="Payments" />
-        <ListItem icon="file-document-outline" label="Dining transactions" />
-        <ListItem icon="wallet-outline" label="District Money" />
 
-        {/* Manage */}
-        <SectionTitle title="Manage" />
-        <ListItem icon="pencil" label="Your reviews" />
-        <ListItem icon="flash-outline" label="Hotlists" />
-        <ListItem icon="bell-outline" label="Movie reminders" />
       </ScrollView>
     </View>
   );
 };
 
-const SectionTitle = ({ title }: { title: string }) => (
-  <Text style={styles.sectionTitle}>{title}</Text>
-);
 
 const BookingCard = ({ icon, label }: { icon: string; label: string }) => (
   <TouchableOpacity style={styles.bookingCard}>

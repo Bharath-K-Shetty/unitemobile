@@ -1,8 +1,8 @@
-// src/screens/EventScreen.tsx
+import { getAnchorPrograms } from '@/utils/getAnchorProgram'; // make sure this exports `program`
 import { Ionicons } from '@expo/vector-icons';
+import { Connection } from '@solana/web3.js';
 import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
-
+import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
   Image,
@@ -13,42 +13,32 @@ import {
   TextInput,
   TouchableOpacity,
   View
-} from 'react-native';
-
-
+} from 'react-native'; // fallback image
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.9;
 
-const ARTISTS = [
-  { id: '1', name: 'A. R. Rahman', image: require('../../assets/images/event1.jpg') },
-  { id: '2', name: 'Enrique Iglesias', image: require('../../assets/images/event1.jpg') },
-  { id: '3', name: 'Hiphop Tamizha Adhi', image: require('../../assets/images/event1.jpg') },
-];
-
-const EVENTS = [
-  {
-    id: '1',
-    title: 'Bandaje Falls Trek',
-    image: require('../../assets/images/event2.jpg'),
-  },
-  {
-    id: '2',
-    title: 'Bandaje Falls Trek',
-    image: require('../../assets/images/event6.jpg'),
-  },
-  {
-    id: '3',
-    title: 'Bandaje Falls Trek',
-    image: require('../../assets/images/event6.jpg'),
-  },
-];
-
 const EventScreen = () => {
+  const [events, setEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const connection = new Connection('https://api.devnet.solana.com'); // or use your cluster endpoint
+        const { program } = await getAnchorPrograms(connection);
+        const allEvents = await program.account.eventAccount.all();
+        setEvents(allEvents);
+      } catch (err) {
+        console.error('Error fetching events:', err);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
   return (
     <View style={{ flex: 1, paddingTop: StatusBar.currentHeight || 24, backgroundColor: '#0d0d0d' }}>
       <ScrollView style={styles.container}>
-
         <LinearGradient colors={['#D0FF00', '#101400']} style={styles.gradient}>
           <View style={styles.searchContainer}>
             <Ionicons name="search-outline" size={20} color="#888" style={{ marginLeft: 8 }} />
@@ -58,42 +48,33 @@ const EventScreen = () => {
               style={styles.searchInput}
             />
           </View>
-
-
         </LinearGradient>
 
-        {/* Filters */}
         <View style={styles.filterRow}>
-          <TouchableOpacity style={styles.filterBtn}>
-            <Text style={styles.filterText}>Filters</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterBtn}>
-            <Text style={styles.filterText}>Today</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterBtn}>
-            <Text style={styles.filterText}>Tomorrow</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterBtn}>
-            <Text style={styles.filterText}>This Weekend</Text>
-          </TouchableOpacity>
+          <TouchableOpacity style={styles.filterBtn}><Text style={styles.filterText}>Filters</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.filterBtn}><Text style={styles.filterText}>Today</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.filterBtn}><Text style={styles.filterText}>Tomorrow</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.filterBtn}><Text style={styles.filterText}>This Weekend</Text></TouchableOpacity>
         </View>
 
-        {EVENTS.map((event) => (
-          event?.image && (
-            <TouchableOpacity key={event.id} style={styles.eventCard}>
-              <Image source={event.image} style={styles.eventImage} />
-              <View style={styles.eventOverlay}>
-                <LinearGradient
-                  colors={['transparent', 'rgba(0,0,0,0.8)']}
-                  style={{ flex: 1, padding: 12 }}
-                >
-                  <Text style={styles.eventTitle}>{event.title}</Text>
-                </LinearGradient>
-              </View>
-            </TouchableOpacity>
-          )
+        {events.map((event, idx) => (
+          <TouchableOpacity key={event.publicKey.toBase58()} style={styles.eventCard}>
+            <Image source={require('../../assets/images/event2.jpg')} style={styles.eventImage} />
+            <View style={styles.eventOverlay}>
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.8)']}
+                style={{ flex: 1, padding: 12 }}
+              >
+                <Text style={styles.eventTitle}>
+                  {event.account.title}
+                </Text>
+                <Text style={styles.eventTitle}>
+                  {event.account.organizer.toString()}
+                </Text>
+              </LinearGradient>
+            </View>
+          </TouchableOpacity>
         ))}
-
       </ScrollView>
     </View>
   );
