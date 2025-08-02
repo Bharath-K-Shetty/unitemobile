@@ -6,6 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import React, { useEffect, useState } from 'react';
 
 import CreateEventScreen from '@/screens/CreateEventScreen';
+import EventDetailsScreen from '@/screens/EventDetailsScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import Navigation, { TabParamList } from './index';
@@ -15,6 +16,7 @@ export type RootStackParamList = {
   MainApp: NavigatorScreenParams<TabParamList>;
   CreateEvent: undefined;
   ProfileScreen: undefined;
+  EventDetails: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -45,6 +47,7 @@ export default function RootNavigator() {
       <Stack.Screen name="MainApp" component={Navigation} />
       <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+      <Stack.Screen name="EventDetails" component={EventDetailsScreen} />
     </Stack.Navigator>
   );
 }

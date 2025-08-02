@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { createEvent } from "../lib/getUniteProgram";
 
 export default function CreateEventScreen() {
@@ -89,7 +90,7 @@ export default function CreateEventScreen() {
         eventName,
         description: '',
         deadline: Math.floor(deadline.getTime() / 1000),
-        feeLamports: Math.floor(parseFloat(ticketPrice) * 1e9),
+        feeLamports: parseFloat(ticketPrice),
         quorum: parseInt(minQuorum, 10),
         capacity: parseInt(maxQuorum, 10),
         // image: image
@@ -125,184 +126,186 @@ export default function CreateEventScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={['#D0FF00', '#101400']} style={styles.gradient}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerText}>Create New Event</Text>
-      </LinearGradient>
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <LinearGradient colors={['#D0FF00', '#101400']} style={styles.gradient}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerText}>Create New Event</Text>
+        </LinearGradient>
 
-      <View style={styles.form}>
-        <TextInput
-          placeholder="Event Name"
-          placeholderTextColor="#888"
-          value={eventName}
-          onChangeText={setEventName}
-          style={styles.input}
-        />
+        <View style={styles.form}>
+          <TextInput
+            placeholder="Event Name"
+            placeholderTextColor="#888"
+            value={eventName}
+            onChangeText={setEventName}
+            style={styles.input}
+          />
 
-        <TouchableOpacity style={styles.imageUpload} onPress={pickImage}>
-          {image ? (
-            <Image source={{ uri: image }} style={styles.imagePreview} />
-          ) : (
-            <Text style={styles.imageUploadText}>Upload Event Image</Text>
-          )}
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.imageUpload} onPress={pickImage}>
+            {image ? (
+              <Image source={{ uri: image }} style={styles.imagePreview} />
+            ) : (
+              <Text style={styles.imageUploadText}>Upload Event Image</Text>
+            )}
+          </TouchableOpacity>
 
-        <TextInput
-          placeholder="Minimum Quorum"
-          placeholderTextColor="#888"
-          value={minQuorum}
-          onChangeText={setMinQuorum}
-          keyboardType="numeric"
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Maximum Quorum"
-          placeholderTextColor="#888"
-          value={maxQuorum}
-          onChangeText={setMaxQuorum}
-          keyboardType="numeric"
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Ticket Price (in SOL)"
-          placeholderTextColor="#888"
-          value={ticketPrice}
-          onChangeText={setTicketPrice}
-          keyboardType="numeric"
-          style={styles.input}
-        />
+          <TextInput
+            placeholder="Minimum Quorum"
+            placeholderTextColor="#888"
+            value={minQuorum}
+            onChangeText={setMinQuorum}
+            keyboardType="numeric"
+            style={styles.input}
+          />
+          <TextInput
+            placeholder="Maximum Quorum"
+            placeholderTextColor="#888"
+            value={maxQuorum}
+            onChangeText={setMaxQuorum}
+            keyboardType="numeric"
+            style={styles.input}
+          />
+          <TextInput
+            placeholder="Ticket Price (in SOL)"
+            placeholderTextColor="#888"
+            value={ticketPrice}
+            onChangeText={setTicketPrice}
+            keyboardType="numeric"
+            style={styles.input}
+          />
 
-        <TouchableOpacity
-          onPress={() => setShowDatePicker(true)}
-          style={styles.datePickerButton}
-        >
-          <Text style={styles.datePickerText}>
-            Deadline: {formatDateTime(deadline)}
-          </Text>
-          <Ionicons name="calendar-outline" size={20} color="#888" />
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            style={styles.datePickerButton}
+          >
+            <Text style={styles.datePickerText}>
+              Deadline: {formatDateTime(deadline)}
+            </Text>
+            <Ionicons name="calendar-outline" size={20} color="#888" />
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleCreateEvent}>
-          <Text style={styles.submitText}>Create Event</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity style={styles.submitButton} onPress={handleCreateEvent}>
+            <Text style={styles.submitText}>Create Event</Text>
+          </TouchableOpacity>
+        </View>
 
-      {showDatePicker && (
-        <Modal
-          visible={showDatePicker}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={handleDateCancel}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <TouchableOpacity onPress={handleDateCancel}>
-                  <Text style={styles.modalButton}>Cancel</Text>
-                </TouchableOpacity>
-                <Text style={styles.modalTitle}>Select Deadline</Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={[styles.modalButton, styles.confirmButton]}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.datePickerContainer}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.pickerRow}>
-                    <View style={styles.pickerColumn}>
-                      <Text style={styles.pickerLabel}>Year</Text>
-                      <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
-                        {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i).map((year) => (
-                          <TouchableOpacity
-                            key={year}
-                            style={[styles.pickerItem, deadline.getFullYear() === year && styles.pickerItemSelected]}
-                            onPress={() => handleDateChange('year', year)}
-                          >
-                            <Text style={[styles.pickerItemText, deadline.getFullYear() === year && styles.pickerItemTextSelected]}>
-                              {year}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
+        {showDatePicker && (
+          <Modal
+            visible={showDatePicker}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={handleDateCancel}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <TouchableOpacity onPress={handleDateCancel}>
+                    <Text style={styles.modalButton}>Cancel</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.modalTitle}>Select Deadline</Text>
+                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <Text style={[styles.modalButton, styles.confirmButton]}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.datePickerContainer}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.pickerRow}>
+                      <View style={styles.pickerColumn}>
+                        <Text style={styles.pickerLabel}>Year</Text>
+                        <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+                          {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i).map((year) => (
+                            <TouchableOpacity
+                              key={year}
+                              style={[styles.pickerItem, deadline.getFullYear() === year && styles.pickerItemSelected]}
+                              onPress={() => handleDateChange('year', year)}
+                            >
+                              <Text style={[styles.pickerItemText, deadline.getFullYear() === year && styles.pickerItemTextSelected]}>
+                                {year}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+
+                      <View style={styles.pickerColumn}>
+                        <Text style={styles.pickerLabel}>Month</Text>
+                        <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+                          {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => (
+                            <TouchableOpacity
+                              key={month}
+                              style={[styles.pickerItem, deadline.getMonth() === index && styles.pickerItemSelected]}
+                              onPress={() => handleDateChange('month', index + 1)}
+                            >
+                              <Text style={[styles.pickerItemText, deadline.getMonth() === index && styles.pickerItemTextSelected]}>
+                                {month}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+
+                      <View style={styles.pickerColumn}>
+                        <Text style={styles.pickerLabel}>Day</Text>
+                        <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+                          {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                            <TouchableOpacity
+                              key={day}
+                              style={[styles.pickerItem, deadline.getDate() === day && styles.pickerItemSelected]}
+                              onPress={() => handleDateChange('day', day)}
+                            >
+                              <Text style={[styles.pickerItemText, deadline.getDate() === day && styles.pickerItemTextSelected]}>
+                                {day}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+
+                      <View style={styles.pickerColumn}>
+                        <Text style={styles.pickerLabel}>Hour</Text>
+                        <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+                          {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                            <TouchableOpacity
+                              key={hour}
+                              style={[styles.pickerItem, deadline.getHours() === hour && styles.pickerItemSelected]}
+                              onPress={() => handleDateChange('hour', hour)}
+                            >
+                              <Text style={[styles.pickerItemText, deadline.getHours() === hour && styles.pickerItemTextSelected]}>
+                                {hour.toString().padStart(2, '0')}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+
+                      <View style={styles.pickerColumn}>
+                        <Text style={styles.pickerLabel}>Min</Text>
+                        <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+                          {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
+                            <TouchableOpacity
+                              key={minute}
+                              style={[styles.pickerItem, deadline.getMinutes() === minute && styles.pickerItemSelected]}
+                              onPress={() => handleDateChange('minute', minute)}
+                            >
+                              <Text style={[styles.pickerItemText, deadline.getMinutes() === minute && styles.pickerItemTextSelected]}>
+                                {minute.toString().padStart(2, '0')}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
                     </View>
-
-                    <View style={styles.pickerColumn}>
-                      <Text style={styles.pickerLabel}>Month</Text>
-                      <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
-                        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => (
-                          <TouchableOpacity
-                            key={month}
-                            style={[styles.pickerItem, deadline.getMonth() === index && styles.pickerItemSelected]}
-                            onPress={() => handleDateChange('month', index + 1)}
-                          >
-                            <Text style={[styles.pickerItemText, deadline.getMonth() === index && styles.pickerItemTextSelected]}>
-                              {month}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-
-                    <View style={styles.pickerColumn}>
-                      <Text style={styles.pickerLabel}>Day</Text>
-                      <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
-                        {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                          <TouchableOpacity
-                            key={day}
-                            style={[styles.pickerItem, deadline.getDate() === day && styles.pickerItemSelected]}
-                            onPress={() => handleDateChange('day', day)}
-                          >
-                            <Text style={[styles.pickerItemText, deadline.getDate() === day && styles.pickerItemTextSelected]}>
-                              {day}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-
-                    <View style={styles.pickerColumn}>
-                      <Text style={styles.pickerLabel}>Hour</Text>
-                      <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
-                        {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-                          <TouchableOpacity
-                            key={hour}
-                            style={[styles.pickerItem, deadline.getHours() === hour && styles.pickerItemSelected]}
-                            onPress={() => handleDateChange('hour', hour)}
-                          >
-                            <Text style={[styles.pickerItemText, deadline.getHours() === hour && styles.pickerItemTextSelected]}>
-                              {hour.toString().padStart(2, '0')}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-
-                    <View style={styles.pickerColumn}>
-                      <Text style={styles.pickerLabel}>Min</Text>
-                      <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
-                        {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
-                          <TouchableOpacity
-                            key={minute}
-                            style={[styles.pickerItem, deadline.getMinutes() === minute && styles.pickerItemSelected]}
-                            onPress={() => handleDateChange('minute', minute)}
-                          >
-                            <Text style={[styles.pickerItemText, deadline.getMinutes() === minute && styles.pickerItemTextSelected]}>
-                              {minute.toString().padStart(2, '0')}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  </View>
-                </ScrollView>
+                  </ScrollView>
+                </View>
               </View>
             </View>
-          </View>
-        </Modal>
-      )}
-    </View>
+          </Modal>
+        )}
+      </View>
+    </SafeAreaView>
   );
 }
 

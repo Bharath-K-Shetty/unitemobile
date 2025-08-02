@@ -1,8 +1,12 @@
+import { RootStackParamList } from '@/types/navigation';
 import { getAnchorPrograms } from '@/utils/getAnchorProgram'; // make sure this exports `program`
+import CircularLoader from '@components/CircularLoader';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Connection } from '@solana/web3.js';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dimensions,
   Image,
@@ -14,20 +18,24 @@ import {
   TouchableOpacity,
   View
 } from 'react-native'; // fallback image
-
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.9;
 
 const EventScreen = () => {
   const [events, setEvents] = useState<any[]>([]);
-
+  type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'EventDetails'>;
+  const navigation = useNavigation<NavigationProp>();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     const fetchEvents = async () => {
       try {
+        setLoading(true);
         const connection = new Connection('https://api.devnet.solana.com'); // or use your cluster endpoint
         const { program } = await getAnchorPrograms(connection);
         const allEvents = await program.account.eventAccount.all();
         setEvents(allEvents);
+        setLoading(false);
       } catch (err) {
         console.error('Error fetching events:', err);
       }
@@ -35,6 +43,10 @@ const EventScreen = () => {
 
     fetchEvents();
   }, []);
+  const filteredEvents = events.filter(event =>
+    event.account.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
 
   return (
     <View style={{ flex: 1, paddingTop: StatusBar.currentHeight || 24, backgroundColor: '#0d0d0d' }}>
@@ -46,6 +58,8 @@ const EventScreen = () => {
               placeholder="Search for Events"
               placeholderTextColor="#888"
               style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={text => setSearchQuery(text)}
             />
           </View>
         </LinearGradient>
@@ -56,27 +70,40 @@ const EventScreen = () => {
           <TouchableOpacity style={styles.filterBtn}><Text style={styles.filterText}>Tomorrow</Text></TouchableOpacity>
           <TouchableOpacity style={styles.filterBtn}><Text style={styles.filterText}>This Weekend</Text></TouchableOpacity>
         </View>
-
-        {events.map((event, idx) => (
-          <TouchableOpacity key={event.publicKey.toBase58()} style={styles.eventCard}>
-            <Image source={require('../../assets/images/event2.jpg')} style={styles.eventImage} />
-            <View style={styles.eventOverlay}>
-              <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.8)']}
-                style={{ flex: 1, padding: 12 }}
-              >
-                <Text style={styles.eventTitle}>
-                  {event.account.title}
-                </Text>
-                <Text style={styles.eventTitle}>
-                  {event.account.organizer.toString()}
-                </Text>
-              </LinearGradient>
-            </View>
-          </TouchableOpacity>
-        ))}
+        {!loading ?
+          (
+            filteredEvents.map((event, idx) => (
+              <TouchableOpacity key={event.publicKey.toBase58()} style={styles.eventCard}
+                onPress={() =>
+                  navigation.navigate('EventDetails', {
+                    eventPubKey: event.publicKey.toBase58(),
+                    imageUrl: require('../../assets/images/event2.jpg'),
+                    title: event.account.title,
+                    organizer: event.account.organizer.toString(),
+                    description: event.account.description,
+                    price: event.account.ticketPrice.toString(),
+                  })
+                }>
+                <Image source={require('../../assets/images/event2.jpg')} style={styles.eventImage} />
+                <View style={styles.eventOverlay}>
+                  <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.8)']}
+                    style={{ flex: 1, padding: 12 }}
+                  >
+                    <Text style={styles.eventTitle}>
+                      {event.account.title}
+                    </Text>
+                    <Text style={styles.eventTitle}>
+                      {event.account.organizer.toString()}
+                    </Text>
+                  </LinearGradient>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : <CircularLoader />
+        }
       </ScrollView>
-    </View>
+    </View >
   );
 };
 

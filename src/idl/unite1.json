@@ -89,7 +89,7 @@
         },
         {
           "name": "collateralVault",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -120,7 +120,7 @@
         },
         {
           "name": "collateralVault",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {

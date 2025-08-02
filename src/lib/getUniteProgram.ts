@@ -1,11 +1,10 @@
 import { getAnchorPrograms } from "@/utils/getAnchorProgram";
 import { BN } from "@coral-xyz/anchor";
-import { transact, Web3MobileWallet } from "@solana-mobile/mobile-wallet-adapter-protocol-web3js";
 import {
   Connection,
+  LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
-  Transaction,
   TransactionMessage,
   VersionedTransaction
 } from "@solana/web3.js";
@@ -32,6 +31,32 @@ function getEventPDA(authority: PublicKey, eventCount: number) {
     programId
   );
 }
+
+
+export function getCollateralVaultPDA(authority: PublicKey): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("collateral_vault"), authority.toBuffer()],
+    programId
+  );
+}
+function getEventVaultPDA(eventPda: PublicKey): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("event_vault"), eventPda.toBuffer()],
+    programId
+  );
+}
+export function getTicketPDA(eventPda: PublicKey, buyer: PublicKey, timestamp: number): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("ticket"),
+      eventPda.toBuffer(),
+      buyer.toBuffer(),
+      new BN(timestamp).toArrayLike(Buffer, "le", 8), // match anchor's u64 encoding
+    ],
+    programId
+  );
+}
+
 
 export async function initOrganizer(connection: Connection, wallet: any) {
   const { program } = await getAnchorPrograms(connection);
@@ -108,6 +133,9 @@ export async function createEvent(connection: Connection, wallet: any, params: {
   const [eventPda] = getEventPDA(authority, eventCount);
   console.log("Event pda is", eventPda);
 
+  // let ticket_price = BigInt(Math.floor(params.feeLamports * LAMPORTS_PER_SOL)).toString();
+  let ticket_price = params.feeLamports * LAMPORTS_PER_SOL;
+  console.log("Ticket price is", ticket_price);
 
   const { blockhash } = await connection.getLatestBlockhash();
   console.log("creating tx and blockhash is ", blockhash);
@@ -116,7 +144,7 @@ export async function createEvent(connection: Connection, wallet: any, params: {
       params.eventName,
       params.description,
       new BN(params.deadline),
-      new BN(params.feeLamports),
+      new BN(ticket_price),
       new BN(params.quorum),
       new BN(params.capacity)
     )
@@ -151,56 +179,361 @@ export async function createEvent(connection: Connection, wallet: any, params: {
 
   // ✅ (Then fetch the new event or organizer if needed)
   try {
-    const createdEvent = await program.account.event.fetch(eventPda);
+    const createdEvent = await program.account.eventAccount.fetch(eventPda);
     console.log("Created event fetched successfully:", createdEvent);
   } catch (err) {
     console.error("Error fetching event after tx:", err);
   }
 }
-export async function testSolTransfer(
+
+export async function deverifyOrganizer(
   connection: Connection,
-  authorizeSession: (wallet: Web3MobileWallet) => Promise<any>
+  wallet: any,
 ) {
-  await transact(async (wallet) => {
+  const { provider, anchorWallet, program } = await getAnchorPrograms(connection);
+  const authority = anchorWallet.publicKey!;
 
-    const walletadd = await SecureStore.getItemAsync("wallet_address");
-    if (!walletadd) throw new Error("Publickey not found");
+  const [organizerPda] = getOrganizerPDA(authority);
+  const [collateralVaultPda] = getCollateralVaultPDA(authority);
+  const {
+    context: { slot: minContextSlot },
+    value: latestBlockhash,
+  } = await connection.getLatestBlockhashAndContext();
+
+  const { blockhash } = latestBlockhash;
 
 
-    const fromPubkey = new PublicKey(walletadd);
-    const balance = await connection.getBalance(fromPubkey);
-    console.log("💰 Balance (lamports):", balance);
-    const toPubkey = new PublicKey("8MPs4Am9W8vMfpqnYB96MKHGC6yy83Eq1d4Rc455bVFL");
 
-    console.log("🔑 From:", fromPubkey.toBase58());
-    console.log("🎯 To:", toPubkey.toBase58());
+  const verifyIx = await program.methods
+    .unverifyOrganizer()
+    .accounts({
+      organizer: organizerPda,
+      authority,
+      collateralVault: collateralVaultPda,
+      systemProgram: SystemProgram.programId,
+    })
+    .transaction();
 
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+  const msg = new TransactionMessage({
+    payerKey: authority,
+    recentBlockhash: blockhash,
+    instructions: verifyIx.instructions,
+  }).compileToV0Message();
 
-    // Authorize wallet
-    const authResult = await authorizeSession(wallet);
+  const tx = new VersionedTransaction(msg);
+  const signature = await wallet.signAndSendTransaction(tx, minContextSlot);
 
-    // Create legacy Transaction (not VersionedTransaction)
-    const transaction = new Transaction({
-      feePayer: fromPubkey,
-      recentBlockhash: blockhash,
-    }).add(
-      SystemProgram.transfer({
-        fromPubkey,
-        toPubkey,
-        lamports: 1000000, // 0.001 SOL
-      })
-    );
+  await connection.confirmTransaction(
+    {
+      signature,
+      ...latestBlockhash,
+    },
+    'confirmed'
+  );
 
-    console.log("✍️ Signing and sending legacy transaction...");
-    const signedTxs = await wallet.signTransactions({ transactions: [transaction] });
+  // Optional delay for consistency
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const signature = await connection.sendRawTransaction(signedTxs[0].serialize());
-
-    console.log("✅ Signature:", signature);
-
-    await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight });
-
-    console.log("🎉 Transfer confirmed!");
-  });
+  try {
+    const organizer = await program.account.organizerAccount.fetch(organizerPda);
+    console.log('✅ Organizer verified:', organizer);
+    return organizer;
+  } catch (err) {
+    console.error('❌ Error fetching organizer after verification:', err);
+    throw err;
+  }
 }
+
+export async function verifyOrganizer(
+  connection: Connection,
+  wallet: any,
+  amountSol: number
+) {
+  const { provider, anchorWallet, program } = await getAnchorPrograms(connection);
+  const authority = anchorWallet.publicKey!;
+
+  const [organizerPda] = getOrganizerPDA(authority);
+  const [collateralVaultPda] = getCollateralVaultPDA(authority);
+  const {
+    context: { slot: minContextSlot },
+    value: latestBlockhash,
+  } = await connection.getLatestBlockhashAndContext();
+
+  const { blockhash } = latestBlockhash;
+  console.log('Verifying organizer with collateral:', amountSol);
+  const lamports = Math.floor(amountSol * LAMPORTS_PER_SOL);
+  console.log("Lamports are ", lamports);
+  const verifyIx = await program.methods
+    .verifyOrganizer(new BN(lamports))
+    .accounts({
+      organizer: organizerPda,
+      authority,
+      collateralVault: collateralVaultPda,
+      systemProgram: SystemProgram.programId,
+    })
+    .transaction();
+
+  const msg = new TransactionMessage({
+    payerKey: authority,
+    recentBlockhash: blockhash,
+    instructions: verifyIx.instructions,
+  }).compileToV0Message();
+
+  const tx = new VersionedTransaction(msg);
+  const signature = await wallet.signAndSendTransaction(tx, minContextSlot);
+
+  await connection.confirmTransaction(
+    {
+      signature,
+      ...latestBlockhash,
+    },
+    'confirmed'
+  );
+
+  // Optional delay for consistency
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  try {
+    const organizer = await program.account.organizerAccount.fetch(organizerPda);
+    console.log('✅ Organizer verified:', organizer);
+    return organizer;
+  } catch (err) {
+    console.error('❌ Error fetching organizer after verification:', err);
+    throw err;
+  }
+}
+
+export async function checkIfOrganizerIsVerified(connection: Connection, wallet: any) {
+  const { provider, anchorWallet, program } = await getAnchorPrograms(connection);
+  const authority = anchorWallet.publicKey!;
+  const [organizerPda] = getOrganizerPDA(authority);
+
+  try {
+    const organizerAccount = await program.account.organizerAccount.fetch(organizerPda);
+
+    return organizerAccount.isVerified;
+  } catch (e) {
+    console.warn("Organizer account not found or fetch failed:", e);
+    return false; // Not verified
+  }
+}
+export async function unverifyOrganizer(
+  connection: Connection,
+  wallet: any,
+) {
+  const { provider, anchorWallet, program } = await getAnchorPrograms(connection);
+  const authority = anchorWallet.publicKey!;
+
+  const [organizerPda] = getOrganizerPDA(authority);
+  const [collateralVaultPda] = getCollateralVaultPDA(authority);
+  const {
+    context: { slot: minContextSlot },
+    value: latestBlockhash,
+  } = await connection.getLatestBlockhashAndContext();
+
+  const { blockhash } = latestBlockhash;
+
+
+  const verifyIx = await program.methods
+    .unverifyOrganizer()
+    .accounts({
+      organizer: organizerPda,
+      authority,
+      collateralVault: collateralVaultPda,
+      systemProgram: SystemProgram.programId,
+    })
+    .transaction();
+
+  const msg = new TransactionMessage({
+    payerKey: authority,
+    recentBlockhash: blockhash,
+    instructions: verifyIx.instructions,
+  }).compileToV0Message();
+
+  const tx = new VersionedTransaction(msg);
+  const signature = await wallet.signAndSendTransaction(tx, minContextSlot);
+
+  await connection.confirmTransaction(
+    {
+      signature,
+      ...latestBlockhash,
+    },
+    'confirmed'
+  );
+
+  // Optional delay for consistency
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  try {
+    const organizer = await program.account.organizerAccount.fetch(organizerPda);
+    console.log('✅ Organizer verified:', organizer);
+    return organizer;
+  } catch (err) {
+    console.error('❌ Error fetching organizer after verification:', err);
+    throw err;
+  }
+}
+export async function ticketVaultInitialization(
+  connection: Connection,
+  wallet: any,
+  eventPubkey: PublicKey,
+  timeStamp: number
+) {
+  const { provider, anchorWallet, program } = await getAnchorPrograms(connection);
+  const buyer = anchorWallet.publicKey!;
+
+
+
+  const [ticketPda] = getTicketPDA(eventPubkey, buyer, timeStamp);
+
+  const {
+    context: { slot: minContextSlot },
+    value: latestBlockhash,
+  } = await connection.getLatestBlockhashAndContext();
+  const { blockhash } = latestBlockhash;
+
+
+  // Build transaction
+  const buyIx = await program.methods
+    .initializeTicketAccount(new BN(timeStamp))
+    .accounts({
+      event: eventPubkey,
+      buyer: buyer,
+      ticket: ticketPda,
+      systemProgram: SystemProgram.programId,
+    })
+    .transaction();
+
+  const msg = new TransactionMessage({
+    payerKey: buyer,
+    recentBlockhash: blockhash,
+    instructions: buyIx.instructions,
+  }).compileToV0Message();
+
+  const tx = new VersionedTransaction(msg);
+  const signature = await wallet.signAndSendTransaction(tx, minContextSlot);
+
+  await connection.confirmTransaction(
+    {
+      signature,
+      ...latestBlockhash,
+    },
+    'confirmed'
+  );
+
+  console.log('🎟️ Ticket purchase confirmed:', signature);
+  return signature;
+}
+
+export async function buyTicket(
+  connection: Connection,
+  wallet: any,
+  eventPubkey: PublicKey,
+  timeStamp: number
+) {
+  const { provider, anchorWallet, program } = await getAnchorPrograms(connection);
+  const buyer = anchorWallet.publicKey!;
+
+
+
+  const [eventVaultPda] = getEventVaultPDA(eventPubkey);
+  const [ticketPda] = getTicketPDA(eventPubkey, buyer, timeStamp);
+
+  const {
+    context: { slot: minContextSlot },
+    value: latestBlockhash,
+  } = await connection.getLatestBlockhashAndContext();
+  const { blockhash } = latestBlockhash;
+
+
+  // Build transaction
+  const buyIx = await program.methods
+    .buyTicket(new BN(timeStamp))
+    .accounts({
+      event: eventPubkey,
+      eventVault: eventVaultPda,
+      buyer: buyer,
+      ticket: ticketPda,
+      systemProgram: SystemProgram.programId,
+    })
+    .transaction();
+
+  const msg = new TransactionMessage({
+    payerKey: buyer,
+    recentBlockhash: blockhash,
+    instructions: buyIx.instructions,
+  }).compileToV0Message();
+
+  const tx = new VersionedTransaction(msg);
+  const signature = await wallet.signAndSendTransaction(tx, minContextSlot);
+
+  await connection.confirmTransaction(
+    {
+      signature,
+      ...latestBlockhash,
+    },
+    'confirmed'
+  );
+
+  console.log('🎟️ Ticket purchase confirmed:', signature);
+  return signature;
+}
+
+export async function getEventsByOrganizer(connection: Connection, wallet: any) {
+  const { anchorWallet, program } = await getAnchorPrograms(connection);
+  const authority = anchorWallet.publicKey!;
+  const [organizerPda] = getOrganizerPDA(authority);
+
+  const organizer = await program.account.organizerAccount.fetch(organizerPda);
+  console.log("Fetched organizer account:", organizer);
+  const eventCount = organizer.eventCount as number;
+
+  // Step 2: Derive all event PDAs
+  const eventPdas = Array.from({ length: eventCount }, (_, index) =>
+    getEventPDA(authority, index)[0]
+  );
+
+  // Step 3: Fetch all event accounts in parallel
+  const eventAccounts = await Promise.all(
+    eventPdas.map((pda) => program.account.eventAccount.fetch(pda).catch(() => null))
+  );
+
+  // Filter out failed fetches
+  return eventAccounts
+    .map((event, idx) => event && { pda: eventPdas[idx], ...event })
+    .filter(Boolean);
+}
+
+export const getTicketsWithEventNames = async (connection: Connection, wallet: any) => {
+  const { anchorWallet, program } = await getAnchorPrograms(connection);
+
+  const tickets = await program.account.ticketAccount.all([
+    {
+      memcmp: {
+        offset: 8, // buyer is first field after discriminator
+        bytes: anchorWallet.publicKey.toBase58(),
+      },
+    },
+  ]);
+
+  const detailedTickets = await Promise.all(
+    tickets.map(async (ticket: any) => {
+      const eventPubkey = ticket.account.event;
+
+      let eventAccount;
+      try {
+        eventAccount = await program.account.eventAccount.fetch(eventPubkey);
+      } catch (err) {
+        console.error("Failed to fetch event for ticket:", err);
+      }
+
+      return {
+        ticket: ticket.account,
+        eventName: eventAccount?.title || "Unknown Event",
+        eventPubkey,
+      };
+    })
+  );
+
+  return detailedTickets;
+};

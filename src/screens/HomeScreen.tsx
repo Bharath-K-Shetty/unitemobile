@@ -3,7 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useMobileWallet } from '@/utils/useMobileWallet';
 import {
@@ -82,6 +82,8 @@ export default function HomeScreen() {
   const isScrollingRef = useRef(false);
   const [walletAddress, setWalletAddress] = useState("");
   const { disconnect } = useMobileWallet();
+  const [showScanner, setShowScanner] = useState(false);
+
   const getWalletaddress = async () => {
     let wallet = await SecureStore.getItemAsync("wallet_address");
     if (wallet) {
@@ -279,13 +281,13 @@ export default function HomeScreen() {
               <Ionicons name="qr-code-outline" size={24} color="#000" />
               <Ionicons name="settings-outline" size={24} color="#000" style={{ marginLeft: 16, }} />
               <Switch value={isDark} onValueChange={toggleTheme} thumbColor="#fff" style={{ marginLeft: 16, marginRight: 16 }} />
-              <Ionicons
+              {/* <Ionicons
                 name="log-out-outline"
                 size={28}
                 color="white"
                 onPress={handleLogout}
                 style={{ alignSelf: 'flex-end' }}
-              />
+              /> */}
             </View>
 
           </View>
